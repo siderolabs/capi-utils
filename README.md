@@ -1,5 +1,4 @@
-CAPI utils
-----------
+# CAPI utils
 
 CAPI bootstrapping and testing tool.
 
