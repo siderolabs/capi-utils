@@ -9,11 +9,15 @@ import (
 	"context"
 
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
 )
 
 // Provider defines an interface for the infrastructure provider.
 type Provider interface {
 	Name() string
-	Env() error
+	Version() string
+	PreInstall() error
 	IsInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error)
+	GetClusterTemplate(client.Client, client.GetClusterTemplateOptions, interface{}) (client.Template, error)
+	WaitReady(context.Context, *kubernetes.Clientset) error
 }

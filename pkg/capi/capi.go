@@ -7,10 +7,15 @@ package capi
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
@@ -82,6 +87,11 @@ func NewManager(ctx context.Context, options Options) (*Manager, error) {
 		return nil, err
 	}
 
+	_, err = clusterAPI.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return clusterAPI, nil
 }
 
@@ -137,7 +147,11 @@ func (clusterAPI *Manager) Install(ctx context.Context) error {
 	for i, provider := range clusterAPI.options.InfrastructureProviders {
 		providers[i] = provider.Name()
 
-		if err = provider.Env(); err != nil {
+		if provider.Version() != "" {
+			providers[i] += ":" + provider.Version()
+		}
+
+		if err = provider.PreInstall(); err != nil {
 			return err
 		}
 	}
@@ -164,10 +178,74 @@ func (clusterAPI *Manager) Install(ctx context.Context) error {
 			if _, err = clusterAPI.client.Init(opts); err != nil {
 				return err
 			}
+		}
 
-			break
+		if err = provider.WaitReady(ctx, clusterAPI.clientset); err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+type ref struct {
+	types.NamespacedName
+	gvk schema.GroupVersionKind
+}
+
+func getRef(in map[string]interface{}, keys ...string) (*ref, error) {
+	res := &ref{}
+
+	refInterface, found, err := unstructured.NestedMap(in, keys...)
+	if err != nil {
+		return nil, err
+	}
+
+	if !found {
+		return nil, fieldNotFound(keys...)
+	}
+
+	res.Name, found, err = unstructured.NestedString(refInterface, "name")
+	if err != nil {
+		return nil, err
+	}
+
+	if !found {
+		return nil, fieldNotFound(append(keys, "name")...)
+	}
+
+	res.Namespace, found, err = unstructured.NestedString(refInterface, "namespace")
+	if err != nil {
+		return nil, err
+	}
+
+	if !found {
+		return nil, fieldNotFound(append(keys, "namespace")...)
+	}
+
+	groupVersion, found, err := unstructured.NestedString(refInterface, "apiVersion")
+	if err != nil {
+		return nil, err
+	}
+
+	if !found {
+		return nil, fieldNotFound(append(keys, "apiVersion")...)
+	}
+
+	kind, found, err := unstructured.NestedString(refInterface, "kind")
+	if err != nil {
+		return nil, err
+	}
+
+	if !found {
+		return nil, fieldNotFound(append(keys, "kind")...)
+	}
+
+	res.gvk = schema.FromAPIVersionAndKind(groupVersion, kind)
+
+	return res, nil
+}
+
+func fieldNotFound(fields ...string) error {
+	return fmt.Errorf("failed to find field %s", strings.Join(fields, "."))
 }
