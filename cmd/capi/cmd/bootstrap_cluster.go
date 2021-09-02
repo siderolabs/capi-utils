@@ -20,7 +20,7 @@ var clusterCmdFlags struct {
 
 var deployOptions = capi.DefaultDeployOptions()
 
-var awsDeployOptions = infrastructure.AWSDeployOptions()
+var awsDeployOptions = infrastructure.NewAWSDeployOptions()
 
 var clusterCmd = &cobra.Command{
 	Use:   "cluster",

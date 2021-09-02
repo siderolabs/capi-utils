@@ -7,6 +7,8 @@ package infrastructure
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
@@ -16,8 +18,26 @@ import (
 type Provider interface {
 	Name() string
 	Version() string
+	Configure(interface{}) error
 	PreInstall() error
 	IsInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error)
 	GetClusterTemplate(client.Client, client.GetClusterTemplateOptions, interface{}) (client.Template, error)
 	WaitReady(context.Context, *kubernetes.Clientset) error
+}
+
+// NewProvider creates a new provider from a specified type.
+func NewProvider(providerType string) (Provider, error) {
+	parts := strings.Split(providerType, ":")
+
+	var version string
+
+	if len(parts) > 1 {
+		version = parts[1]
+	}
+
+	if parts[0] == AWSProviderName {
+		return NewAWSProvider(version)
+	}
+
+	return nil, fmt.Errorf("unknown infrastructure provider type %s", parts[0])
 }

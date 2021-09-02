@@ -32,11 +32,10 @@ const (
 )
 
 // NewAWSProvider creates new AWS infrastructure provider.
-func NewAWSProvider(creds, version string) *AWSProvider {
+func NewAWSProvider(version string) (*AWSProvider, error) {
 	return &AWSProvider{
-		B64EncodedCredentials: creds,
-		ProviderVersion:       version,
-	}
+		ProviderVersion: version,
+	}, nil
 }
 
 // AWSProvider infrastructure provider.
@@ -45,8 +44,18 @@ type AWSProvider struct {
 	ProviderVersion       string
 }
 
-// DeployOptions defines provider specific settings for cluster deployment.
-type DeployOptions struct {
+// NewAWSSetupOptions creates new AWSSetupOptions.
+func NewAWSSetupOptions() *AWSSetupOptions {
+	return &AWSSetupOptions{}
+}
+
+// AWSSetupOptions AWS specific setup options.
+type AWSSetupOptions struct {
+	AWSCredentials string
+}
+
+// AWSDeployOptions defines provider specific settings for cluster deployment.
+type AWSDeployOptions struct {
 	ControlPlaneMachineType   string
 	ControlPlaneIAMProfile    string
 	ControlPlaneAMIID         string
@@ -64,9 +73,9 @@ type DeployOptions struct {
 	NodeVolSize               int64
 }
 
-// AWSDeployOptions returns default deploy options for the AWS infra provider.
-func AWSDeployOptions() *DeployOptions {
-	return &DeployOptions{
+// NewAWSDeployOptions returns default deploy options for the AWS infra provider.
+func NewAWSDeployOptions() *AWSDeployOptions {
+	return &AWSDeployOptions{
 		ControlPlaneVolSize:     50,
 		NodeVolSize:             50,
 		ControlPlaneMachineType: "t3.large",
@@ -75,6 +84,18 @@ func AWSDeployOptions() *DeployOptions {
 		NodeIAMProfile:          "CAPI_AWS_Worker",
 		CloudProviderVersion:    "v1.20.0-alpha.0",
 	}
+}
+
+// Configure implements Provider interface.
+func (s *AWSProvider) Configure(providerOptions interface{}) error {
+	opts, ok := providerOptions.(*AWSSetupOptions)
+	if !ok {
+		return fmt.Errorf("expected AWSSetupOptions as the first argument")
+	}
+
+	s.B64EncodedCredentials = opts.AWSCredentials
+
+	return nil
 }
 
 // Name implements Provider interface.
@@ -122,12 +143,12 @@ func (s *AWSProvider) IsInstalled(ctx context.Context, clientset *kubernetes.Cli
 // GetClusterTemplate implements Provider interface.
 func (s *AWSProvider) GetClusterTemplate(client client.Client, opts client.GetClusterTemplateOptions, providerOptions interface{}) (client.Template, error) {
 	var (
-		deployOptions = AWSDeployOptions()
+		deployOptions = NewAWSDeployOptions()
 		ok            bool
 	)
 
 	if providerOptions != nil {
-		deployOptions, ok = providerOptions.(*DeployOptions)
+		deployOptions, ok = providerOptions.(*AWSDeployOptions)
 		if !ok {
 			return nil, fmt.Errorf("AWS deployment provider expects aws.DeployOptions as the deployment options")
 		}

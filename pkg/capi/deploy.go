@@ -287,7 +287,7 @@ func (clusterAPI *Manager) DestroyCluster(ctx context.Context, name, namespace, 
 				return nil
 			}
 
-			return retry.ExpectedError(err)
+			return err
 		}
 
 		return retry.ExpectedError(fmt.Errorf("cluster is being deleted"))

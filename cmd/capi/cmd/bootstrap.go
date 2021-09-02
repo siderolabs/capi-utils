@@ -7,14 +7,14 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/talos-systems/capi-utils/pkg/capi"
 	"github.com/talos-systems/capi-utils/pkg/capi/infrastructure"
 )
+
+var setupOptions = map[string]interface{}{}
 
 var awsOptions struct {
 	b64EncodedCredentials string
@@ -29,18 +29,18 @@ var bootstrapCmd = &cobra.Command{
 
 		providers := make([]infrastructure.Provider, len(options.InfrastructureProviders))
 		for i, name := range options.InfrastructureProviders {
-			parts := strings.Split(name, ":")
-			var version string
-			if len(parts) > 1 {
-				version = parts[1]
+			provider, err := infrastructure.NewProvider(name)
+			if err != nil {
+				return err
 			}
 
-			switch parts[0] {
-			case infrastructure.AWSProviderName:
-				providers[i] = infrastructure.NewAWSProvider(awsOptions.b64EncodedCredentials, version)
-			default:
-				return fmt.Errorf("unknown infrastructure provider type %s", name)
+			if opts, ok := setupOptions[provider.Name()]; ok {
+				if err = provider.Configure(opts); err != nil {
+					return err
+				}
 			}
+
+			providers[i] = provider
 		}
 
 		var err error
@@ -67,5 +67,7 @@ func init() {
 	bootstrapCmd.PersistentFlags().StringSliceVar(&options.InfrastructureProviders, "infrastructure-providers", options.InfrastructureProviders, "infrastructure providers to set up")
 	bootstrapCmd.PersistentFlags().StringVar(&options.ClusterctlConfigPath, "clusterctl-config", options.ClusterctlConfigPath, "path to the clusterctl config file")
 	// AWS provider flags
-	bootstrapCmd.PersistentFlags().StringVar(&awsOptions.b64EncodedCredentials, "aws-base64-encoded-credentials", awsOptions.b64EncodedCredentials, "AWS_B64ENCODED_CREDENTIALS")
+	opts := infrastructure.NewAWSSetupOptions()
+	bootstrapCmd.PersistentFlags().StringVar(&opts.AWSCredentials, "aws-base64-encoded-credentials", awsOptions.b64EncodedCredentials, "AWS_B64ENCODED_CREDENTIALS")
+	setupOptions[infrastructure.AWSProviderName] = opts
 }
