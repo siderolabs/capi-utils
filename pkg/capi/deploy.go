@@ -16,6 +16,10 @@ import (
 
 	"github.com/talos-systems/go-retry/retry"
 	"github.com/talos-systems/talos/pkg/machinery/constants"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
 
 	"github.com/talos-systems/capi-utils/pkg/capi/infrastructure"
@@ -255,4 +259,37 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 	}
 
 	return deployedCluster, nil
+}
+
+// DestroyCluster deletes cluster.
+func (clusterAPI *Manager) DestroyCluster(ctx context.Context, name, namespace, version string) error {
+	cluster := &unstructured.Unstructured{}
+	cluster.SetName(name)
+	cluster.SetNamespace(namespace)
+	cluster.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "cluster.x-k8s.io",
+		Kind:    "Cluster",
+		Version: version,
+	})
+
+	if err := clusterAPI.runtimeClient.Delete(ctx, cluster); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	return retry.Constant(30*time.Minute, retry.WithUnits(10*time.Second), retry.WithErrorLogging(true)).Retry(func() error {
+		err := clusterAPI.runtimeClient.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, cluster)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return nil
+			}
+
+			return retry.ExpectedError(err)
+		}
+
+		return retry.ExpectedError(fmt.Errorf("cluster is being deleted"))
+	})
 }

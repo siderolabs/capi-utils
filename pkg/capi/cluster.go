@@ -33,6 +33,8 @@ import (
 type Cluster struct {
 	client            *talosclient.Client
 	name              string
+	namespace         string
+	capiVersion       string
 	controlPlaneNodes []string
 	workerNodes       []string
 }
@@ -198,9 +200,11 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName, version 
 
 	return &Cluster{
 		name:              clusterName,
+		namespace:         clusterRef.Namespace,
 		controlPlaneNodes: controlPlaneNodes,
 		workerNodes:       workerNodes,
 		client:            talosClient,
+		capiVersion:       version,
 	}, nil
 }
 
@@ -246,4 +250,14 @@ func (cluster *Cluster) health(ctx context.Context) error {
 // Name of the cluster.
 func (cluster *Cluster) Name() string {
 	return cluster.name
+}
+
+// Namespace of the cluster.
+func (cluster *Cluster) Namespace() string {
+	return cluster.namespace
+}
+
+// CAPIVersion that was used to deploy the cluster.
+func (cluster *Cluster) CAPIVersion() string {
+	return cluster.capiVersion
 }
