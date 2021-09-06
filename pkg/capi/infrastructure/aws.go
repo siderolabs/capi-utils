@@ -201,7 +201,7 @@ func (s *AWSProvider) WaitReady(ctx context.Context, clientset *kubernetes.Clien
 			return retry.ExpectedError(err)
 		}
 
-		if deployment.Status.ReadyReplicas != deployment.Status.Replicas {
+		if deployment.Status.ReadyReplicas != deployment.Status.Replicas || deployment.Status.ReadyReplicas == 0 {
 			return retry.ExpectedError(fmt.Errorf("%d of %d replicas ready", deployment.Status.ReadyReplicas, deployment.Status.Replicas))
 		}
 

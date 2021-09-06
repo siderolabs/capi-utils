@@ -143,9 +143,26 @@ func (clusterAPI *Manager) Install(ctx context.Context) error {
 		return err
 	}
 
+	var (
+		shouldRunInit bool
+		installed     bool
+	)
+
+	if len(clusterAPI.options.InfrastructureProviders) == 0 {
+		return fmt.Errorf("should have at least one infrastructure provider installed")
+	}
+
 	providers := make([]string, len(clusterAPI.options.InfrastructureProviders))
 	for i, provider := range clusterAPI.options.InfrastructureProviders {
 		providers[i] = provider.Name()
+
+		if installed, err = provider.IsInstalled(ctx, clusterAPI.clientset); err != nil {
+			return err
+		}
+
+		if !installed {
+			shouldRunInit = true
+		}
 
 		if provider.Version() != "" {
 			providers[i] += ":" + provider.Version()
@@ -167,19 +184,13 @@ func (clusterAPI *Manager) Install(ctx context.Context) error {
 		LogUsageInstructions:    false,
 	}
 
-	for _, provider := range clusterAPI.options.InfrastructureProviders {
-		var installed bool
-
-		if installed, err = provider.IsInstalled(ctx, clusterAPI.clientset); err != nil {
+	if shouldRunInit {
+		if _, err = clusterAPI.client.Init(opts); err != nil {
 			return err
 		}
+	}
 
-		if !installed {
-			if _, err = clusterAPI.client.Init(opts); err != nil {
-				return err
-			}
-		}
-
+	for _, provider := range clusterAPI.options.InfrastructureProviders {
 		if err = provider.WaitReady(ctx, clusterAPI.clientset); err != nil {
 			return err
 		}
