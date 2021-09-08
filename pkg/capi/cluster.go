@@ -41,7 +41,7 @@ type Cluster struct {
 
 // NewCluster fetches cluster info from the CAPI state.
 //nolint:gocyclo,cyclop
-func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName, version string) (*Cluster, error) {
+func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName string) (*Cluster, error) {
 	var (
 		cluster      unstructured.Unstructured
 		controlPlane unstructured.Unstructured
@@ -55,7 +55,7 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName, version 
 
 	cluster.SetGroupVersionKind(
 		schema.GroupVersionKind{
-			Version: version,
+			Version: clusterAPI.version,
 			Group:   "cluster.x-k8s.io",
 			Kind:    "Cluster",
 		},
@@ -63,7 +63,7 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName, version 
 
 	machines.SetGroupVersionKind(
 		schema.GroupVersionKind{
-			Version: version,
+			Version: clusterAPI.version,
 			Group:   "cluster.x-k8s.io",
 			Kind:    "Machine",
 		},
@@ -204,7 +204,7 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName, version 
 		controlPlaneNodes: controlPlaneNodes,
 		workerNodes:       workerNodes,
 		client:            talosClient,
-		capiVersion:       version,
+		capiVersion:       clusterAPI.version,
 	}, nil
 }
 

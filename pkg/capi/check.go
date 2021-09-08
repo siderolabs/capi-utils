@@ -20,12 +20,12 @@ import (
 
 // CheckClusterReady verifies that cluster ready from the CAPI point of view.
 //nolint:cyclop,gocyclo,gocognit
-func CheckClusterReady(ctx context.Context, metalClient client.Client, clusterName, version string) error {
+func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, metalClient client.Client, clusterName string) error {
 	var cluster unstructured.Unstructured
 
 	cluster.SetGroupVersionKind(
 		schema.GroupVersionKind{
-			Version: version,
+			Version: clusterAPI.version,
 			Group:   "cluster.x-k8s.io",
 			Kind:    "Cluster",
 		},
@@ -122,7 +122,7 @@ func CheckClusterReady(ctx context.Context, metalClient client.Client, clusterNa
 
 	machineDeployments.SetGroupVersionKind(
 		schema.GroupVersionKind{
-			Version: version,
+			Version: clusterAPI.version,
 			Group:   "cluster.x-k8s.io",
 			Kind:    "MachineDeployment",
 		},

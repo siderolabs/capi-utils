@@ -11,7 +11,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/talos-systems/go-retry/retry"
@@ -153,7 +152,7 @@ func WithProviderOptions(val interface{}) DeployOption {
 }
 
 // DeployCluster creates a new cluster.
-//nolint:gocognit,gocyclo,cyclop
+//nolint:gocognit
 func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string, setters ...DeployOption) (*Cluster, error) {
 	if len(clusterAPI.options.InfrastructureProviders) == 0 {
 		return nil, fmt.Errorf("no infrastructure providers are installed")
@@ -235,25 +234,19 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 		return nil, err
 	}
 
-	var version string
-
 	for _, obj := range template.Objs() {
 		if err = clusterAPI.runtimeClient.Create(ctx, &obj); err != nil {
 			return nil, err
 		}
-
-		if version == "" {
-			version = strings.Split(obj.GetAPIVersion(), "/")[1]
-		}
 	}
 
 	if err = retry.Constant(30*time.Minute, retry.WithUnits(10*time.Second), retry.WithErrorLogging(true)).Retry(func() error {
-		return CheckClusterReady(ctx, clusterAPI.runtimeClient, clusterName, version)
+		return clusterAPI.CheckClusterReady(ctx, clusterAPI.runtimeClient, clusterName)
 	}); err != nil {
 		return nil, err
 	}
 
-	deployedCluster, err := clusterAPI.NewCluster(ctx, options.ClusterName, version)
+	deployedCluster, err := clusterAPI.NewCluster(ctx, options.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -262,14 +255,14 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 }
 
 // DestroyCluster deletes cluster.
-func (clusterAPI *Manager) DestroyCluster(ctx context.Context, name, namespace, version string) error {
+func (clusterAPI *Manager) DestroyCluster(ctx context.Context, name, namespace string) error {
 	cluster := &unstructured.Unstructured{}
 	cluster.SetName(name)
 	cluster.SetNamespace(namespace)
 	cluster.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "cluster.x-k8s.io",
 		Kind:    "Cluster",
-		Version: version,
+		Version: clusterAPI.version,
 	})
 
 	if err := clusterAPI.runtimeClient.Delete(ctx, cluster); err != nil {

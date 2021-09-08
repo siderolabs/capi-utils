@@ -20,6 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -33,6 +34,7 @@ type Manager struct {
 	clientset     *kubernetes.Clientset
 	config        *rest.Config
 	runtimeClient runtimeclient.Client
+	version       string
 
 	options Options
 }
@@ -89,6 +91,10 @@ func NewManager(ctx context.Context, options Options) (*Manager, error) {
 
 	_, err = clusterAPI.GetClient(ctx)
 	if err != nil {
+		return nil, err
+	}
+
+	if err = clusterAPI.FetchState(ctx); err != nil {
 		return nil, err
 	}
 
@@ -195,6 +201,88 @@ func (clusterAPI *Manager) Install(ctx context.Context) error {
 			return err
 		}
 	}
+
+	return nil
+}
+
+// FetchState fetches infra providers and installed CAPI version if any.
+func (clusterAPI *Manager) FetchState(ctx context.Context) error {
+	resources, err := clusterAPI.clientset.ServerPreferredResources()
+	if err != nil {
+		return err
+	}
+
+	gv := schema.GroupVersion{}
+
+	for _, list := range resources {
+		for _, resource := range list.APIResources {
+			if resource.Kind == "Provider" {
+				gv, err = schema.ParseGroupVersion(list.GroupVersion)
+
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Assume CAPI not installed
+	if gv.Version == "" {
+		return nil
+	}
+
+	providers := &unstructured.UnstructuredList{}
+	providers.SetGroupVersionKind(schema.GroupVersionKind{
+		Kind:    "Provider",
+		Group:   gv.Group,
+		Version: gv.Version,
+	})
+
+	if err = clusterAPI.runtimeClient.List(ctx, providers); err != nil {
+		return err
+	}
+
+	var (
+		providerName    string
+		providerVersion string
+		providerType    string
+		ok              bool
+	)
+
+	infrastructureProviders := []infrastructure.Provider{}
+
+	for _, provider := range providers.Items {
+		if providerType, ok, err = unstructured.NestedString(provider.Object, "type"); err != nil {
+			return err
+		} else if !ok {
+			return fieldNotFound("type")
+		}
+
+		if clusterctlv1.ProviderType(providerType) == clusterctlv1.InfrastructureProviderType {
+			if providerName, ok, err = unstructured.NestedString(provider.Object, "providerName"); err != nil {
+				return err
+			} else if !ok {
+				return fieldNotFound("providerName")
+			}
+
+			if providerVersion, ok, err = unstructured.NestedString(provider.Object, "version"); err != nil {
+				return err
+			} else if !ok {
+				return fieldNotFound("providerVersion")
+			}
+
+			provider, err := infrastructure.NewProvider(fmt.Sprintf("%s:%s", providerName, providerVersion))
+			// if we couldn't parse it then it's not supported
+			if err != nil {
+				continue
+			}
+
+			infrastructureProviders = append(infrastructureProviders, provider)
+		}
+	}
+
+	clusterAPI.options.InfrastructureProviders = infrastructureProviders
+	clusterAPI.version = gv.Version
 
 	return nil
 }
