@@ -35,6 +35,7 @@ type Manager struct {
 	config        *rest.Config
 	runtimeClient runtimeclient.Client
 	version       string
+	providers     []infrastructure.Provider
 
 	options Options
 }
@@ -202,7 +203,7 @@ func (clusterAPI *Manager) Install(ctx context.Context) error {
 		}
 	}
 
-	return nil
+	return clusterAPI.FetchState(ctx)
 }
 
 // FetchState fetches infra providers and installed CAPI version if any.
@@ -281,7 +282,7 @@ func (clusterAPI *Manager) FetchState(ctx context.Context) error {
 		}
 	}
 
-	clusterAPI.options.InfrastructureProviders = infrastructureProviders
+	clusterAPI.providers = infrastructureProviders
 	clusterAPI.version = gv.Version
 
 	return nil

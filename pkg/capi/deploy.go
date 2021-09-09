@@ -34,6 +34,7 @@ type DeployOptions struct {
 	Provider          string
 	ProviderVersion   string
 	ClusterName       string
+	ClusterNamespace  string
 	TalosVersion      string
 	KubernetesVersion string
 	Template          []byte
@@ -46,6 +47,7 @@ func DefaultDeployOptions() *DeployOptions {
 	return &DeployOptions{
 		ControlPlaneNodes: 1,
 		WorkerNodes:       1,
+		ClusterNamespace:  "default",
 		TalosVersion:      "v0.11",
 		KubernetesVersion: constants.DefaultKubernetesVersion,
 	}
@@ -151,10 +153,19 @@ func WithProviderOptions(val interface{}) DeployOption {
 	}
 }
 
+// WithClusterNamespace sets cluster namespace.
+func WithClusterNamespace(val string) DeployOption {
+	return func(o *DeployOptions) error {
+		o.ClusterNamespace = val
+
+		return nil
+	}
+}
+
 // DeployCluster creates a new cluster.
 //nolint:gocognit
 func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string, setters ...DeployOption) (*Cluster, error) {
-	if len(clusterAPI.options.InfrastructureProviders) == 0 {
+	if len(clusterAPI.providers) == 0 {
 		return nil, fmt.Errorf("no infrastructure providers are installed")
 	}
 
@@ -171,7 +182,7 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 	var provider infrastructure.Provider
 
 	if options.Provider != "" {
-		for _, p := range clusterAPI.options.InfrastructureProviders {
+		for _, p := range clusterAPI.providers {
 			if p.Name() == options.Provider {
 				if options.ProviderVersion != "" && p.Version() != options.ProviderVersion {
 					continue
@@ -187,7 +198,7 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 			return nil, fmt.Errorf("no provider with name %s is installed", options.Provider)
 		}
 	} else {
-		provider = clusterAPI.options.InfrastructureProviders[0]
+		provider = clusterAPI.providers[0]
 	}
 
 	// set up env variables common for all providers
@@ -240,14 +251,14 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 		}
 	}
 
-	if err = retry.Constant(30*time.Minute, retry.WithUnits(10*time.Second), retry.WithErrorLogging(true)).Retry(func() error {
-		return clusterAPI.CheckClusterReady(ctx, clusterAPI.runtimeClient, clusterName)
-	}); err != nil {
+	deployedCluster, err := clusterAPI.NewCluster(ctx, options.ClusterName, options.ClusterNamespace)
+	if err != nil {
 		return nil, err
 	}
 
-	deployedCluster, err := clusterAPI.NewCluster(ctx, options.ClusterName)
-	if err != nil {
+	if err = retry.Constant(30*time.Minute, retry.WithUnits(10*time.Second), retry.WithErrorLogging(true)).Retry(func() error {
+		return clusterAPI.CheckClusterReady(ctx, deployedCluster)
+	}); err != nil {
 		return nil, err
 	}
 

@@ -11,30 +11,12 @@ import (
 	"github.com/talos-systems/go-retry/retry"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // CheckClusterReady verifies that cluster ready from the CAPI point of view.
 //nolint:cyclop,gocyclo,gocognit
-func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, metalClient client.Client, clusterName string) error {
-	var cluster unstructured.Unstructured
-
-	cluster.SetGroupVersionKind(
-		schema.GroupVersionKind{
-			Version: clusterAPI.version,
-			Group:   "cluster.x-k8s.io",
-			Kind:    "Cluster",
-		},
-	)
-
-	if err := metalClient.Get(ctx, types.NamespacedName{Namespace: "default", Name: clusterName}, &cluster); err != nil {
-		return err
-	}
-
+func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, cluster *Cluster) error {
 	var (
 		initialized bool
 		ready       bool
@@ -43,7 +25,11 @@ func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, metalClient cl
 		err         error
 	)
 
-	if conditions, found, err = unstructured.NestedSlice(cluster.Object, "status", "conditions"); err != nil {
+	if err = cluster.sync(ctx); err != nil {
+		return err
+	}
+
+	if conditions, found, err = unstructured.NestedSlice(cluster.cluster.Object, "status", "conditions"); err != nil {
 		return err
 	}
 
@@ -85,16 +71,8 @@ func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, metalClient cl
 		return retry.ExpectedError(fmt.Errorf("cluster is not ready"))
 	}
 
-	controlPlaneRef, err := getRef(cluster.Object, "spec", "controlPlaneRef")
+	controlPlane, err := cluster.ControlPlanes(ctx)
 	if err != nil {
-		return err
-	}
-
-	var controlPlane unstructured.Unstructured
-
-	controlPlane.SetGroupVersionKind(controlPlaneRef.gvk)
-
-	if err = metalClient.Get(ctx, controlPlaneRef.NamespacedName, &controlPlane); err != nil {
 		return err
 	}
 
@@ -114,26 +92,12 @@ func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, metalClient cl
 		return retry.ExpectedError(fmt.Errorf("control plane is not ready"))
 	}
 
-	if err = checkReplicasReady(controlPlane); err != nil {
+	if err = checkReplicasReady(*controlPlane); err != nil {
 		return err
 	}
 
-	var machineDeployments unstructured.UnstructuredList
-
-	machineDeployments.SetGroupVersionKind(
-		schema.GroupVersionKind{
-			Version: clusterAPI.version,
-			Group:   "cluster.x-k8s.io",
-			Kind:    "MachineDeployment",
-		},
-	)
-
-	labelSelector, err := labels.Parse("cluster.x-k8s.io/cluster-name=capi-test")
+	machineDeployments, err := cluster.Workers(ctx)
 	if err != nil {
-		return err
-	}
-
-	if err = metalClient.List(ctx, &machineDeployments, client.MatchingLabelsSelector{Selector: labelSelector}); err != nil {
 		return err
 	}
 

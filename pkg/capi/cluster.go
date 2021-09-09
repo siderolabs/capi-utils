@@ -25,25 +25,40 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
+	capiclient "sigs.k8s.io/cluster-api/cmd/clusterctl/client"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Cluster attaches to the provisioned CAPI cluster and provides talos.Cluster.
 type Cluster struct {
+	manager           *Manager
 	client            *talosclient.Client
+	cluster           unstructured.Unstructured
 	name              string
 	namespace         string
-	capiVersion       string
 	controlPlaneNodes []string
 	workerNodes       []string
 }
 
 // NewCluster fetches cluster info from the CAPI state.
+func (clusterAPI *Manager) NewCluster(ctx context.Context, name, namespace string) (*Cluster, error) {
+	res := &Cluster{
+		manager:   clusterAPI,
+		name:      name,
+		namespace: namespace,
+	}
+
+	if err := res.sync(ctx); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Sync updates nodes pool and recreates talos client.
 //nolint:gocyclo,cyclop
-func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName string) (*Cluster, error) {
+func (cluster *Cluster) Sync(ctx context.Context) error {
 	var (
-		cluster      unstructured.Unstructured
 		controlPlane unstructured.Unstructured
 		machines     unstructured.UnstructuredList
 		talosConfig  unstructured.Unstructured
@@ -53,27 +68,13 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName string) (
 		configEndpoints   = []string{}
 	)
 
-	cluster.SetGroupVersionKind(
-		schema.GroupVersionKind{
-			Version: clusterAPI.version,
-			Group:   "cluster.x-k8s.io",
-			Kind:    "Cluster",
-		},
-	)
-
 	machines.SetGroupVersionKind(
 		schema.GroupVersionKind{
-			Version: clusterAPI.version,
+			Version: cluster.manager.version,
 			Group:   "cluster.x-k8s.io",
 			Kind:    "Machine",
 		},
 	)
-
-	clusterRef := types.NamespacedName{Namespace: "default", Name: clusterName}
-
-	if err := clusterAPI.runtimeClient.Get(ctx, clusterRef, &cluster); err != nil {
-		return nil, err
-	}
 
 	var (
 		controlPlaneSelector string
@@ -81,45 +82,45 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName string) (
 		err                  error
 	)
 
-	controlPlaneRef, err := getRef(cluster.Object, "spec", "controlPlaneRef")
+	controlPlaneRef, err := getRef(cluster.cluster.Object, "spec", "controlPlaneRef")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	controlPlane.SetGroupVersionKind(controlPlaneRef.gvk)
 
-	if err = clusterAPI.runtimeClient.Get(ctx, controlPlaneRef.NamespacedName, &controlPlane); err != nil {
-		return nil, err
+	if err = cluster.manager.runtimeClient.Get(ctx, controlPlaneRef.NamespacedName, &controlPlane); err != nil {
+		return err
 	}
 
 	if controlPlaneSelector, found, err = unstructured.NestedString(controlPlane.Object, "status", "selector"); err != nil {
-		return nil, err
+		return err
 	} else if !found {
-		return nil, fieldNotFound("status", "selector")
+		return fieldNotFound("status", "selector")
 	}
 
 	labelSelector, err := labels.Parse(controlPlaneSelector)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if err = clusterAPI.runtimeClient.List(ctx, &machines, runtimeclient.MatchingLabelsSelector{Selector: labelSelector}); err != nil {
-		return nil, err
+	if err = cluster.manager.runtimeClient.List(ctx, &machines, runtimeclient.MatchingLabelsSelector{Selector: labelSelector}); err != nil {
+		return err
 	}
 
 	if len(machines.Items) < 1 {
-		return nil, fmt.Errorf("not enough machines found")
+		return fmt.Errorf("not enough machines found")
 	}
 
 	configRef, err := getRef(machines.Items[0].Object, "spec", "bootstrap", "configRef")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	talosConfig.SetGroupVersionKind(configRef.gvk)
 
-	if err = clusterAPI.runtimeClient.Get(ctx, configRef.NamespacedName, &talosConfig); err != nil {
-		return nil, err
+	if err = cluster.manager.runtimeClient.Get(ctx, configRef.NamespacedName, &talosConfig); err != nil {
+		return err
 	}
 
 	var (
@@ -128,46 +129,46 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName string) (
 	)
 
 	if talosConfigString, found, err = unstructured.NestedString(talosConfig.Object, "status", "talosConfig"); err != nil {
-		return nil, err
+		return err
 	} else if !found {
-		return nil, fieldNotFound("status", "talosConfig")
+		return fieldNotFound("status", "talosConfig")
 	}
 
 	clientConfig, err = clientconfig.FromString(talosConfigString)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	kubeconfig, err := clusterAPI.GetKubeconfig(ctx)
+	kubeconfig, err := cluster.manager.GetKubeconfig(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	options := client.GetKubeconfigOptions{
+	options := capiclient.GetKubeconfigOptions{
 		Kubeconfig:          kubeconfig,
-		WorkloadClusterName: clusterRef.Name,
-		Namespace:           clusterRef.Namespace,
+		WorkloadClusterName: cluster.name,
+		Namespace:           cluster.namespace,
 	}
 
-	raw, err := clusterAPI.client.GetKubeconfig(options)
+	raw, err := cluster.manager.client.GetKubeconfig(options)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(raw))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, node := range nodes.Items {
@@ -186,7 +187,7 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName string) (
 	}
 
 	if len(configEndpoints) < 1 {
-		return nil, fmt.Errorf("failed to find control plane nodes")
+		return fmt.Errorf("failed to find control plane nodes")
 	}
 
 	clientConfig.Contexts[clientConfig.Context].Endpoints = configEndpoints
@@ -195,17 +196,27 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, clusterName string) (
 
 	talosClient, err = talosclient.New(ctx, talosclient.WithConfig(clientConfig))
 	if err != nil {
+		return err
+	}
+
+	cluster.client = talosClient
+	cluster.controlPlaneNodes = controlPlaneNodes
+	cluster.workerNodes = workerNodes
+
+	return nil
+}
+
+// TalosClient returns new talos client for the CAPI cluster.
+func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, error) {
+	if cluster.client != nil {
+		return cluster.client, nil
+	}
+
+	if err := cluster.Sync(ctx); err != nil {
 		return nil, err
 	}
 
-	return &Cluster{
-		name:              clusterName,
-		namespace:         clusterRef.Namespace,
-		controlPlaneNodes: controlPlaneNodes,
-		workerNodes:       workerNodes,
-		client:            talosClient,
-		capiVersion:       clusterAPI.version,
-	}, nil
+	return cluster.client, nil
 }
 
 // Health runs the healthcheck for the cluster.
@@ -217,7 +228,12 @@ func (cluster *Cluster) Health(ctx context.Context) error {
 }
 
 func (cluster *Cluster) health(ctx context.Context) error {
-	resp, err := cluster.client.ClusterHealthCheck(talosclient.WithNodes(ctx, cluster.controlPlaneNodes[0]), 3*time.Minute, &talosclusterapi.ClusterInfo{
+	client, err := cluster.TalosClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.ClusterHealthCheck(talosclient.WithNodes(ctx, cluster.controlPlaneNodes[0]), 3*time.Minute, &talosclusterapi.ClusterInfo{
 		ControlPlaneNodes: cluster.controlPlaneNodes,
 		WorkerNodes:       cluster.workerNodes,
 	})
@@ -257,7 +273,58 @@ func (cluster *Cluster) Namespace() string {
 	return cluster.namespace
 }
 
-// CAPIVersion that was used to deploy the cluster.
-func (cluster *Cluster) CAPIVersion() string {
-	return cluster.capiVersion
+// ControlPlanes gets controlplane object from the management cluster.
+func (cluster *Cluster) ControlPlanes(ctx context.Context) (*unstructured.Unstructured, error) {
+	controlPlaneRef, err := getRef(cluster.cluster.Object, "spec", "controlPlaneRef")
+	if err != nil {
+		return nil, err
+	}
+
+	var controlPlane unstructured.Unstructured
+
+	controlPlane.SetGroupVersionKind(controlPlaneRef.gvk)
+
+	if err = cluster.manager.runtimeClient.Get(ctx, controlPlaneRef.NamespacedName, &controlPlane); err != nil {
+		return nil, err
+	}
+
+	return &controlPlane, nil
+}
+
+// Workers gets MachineDeployment list from the management cluster.
+func (cluster *Cluster) Workers(ctx context.Context) (*unstructured.UnstructuredList, error) {
+	var machineDeployments unstructured.UnstructuredList
+
+	machineDeployments.SetGroupVersionKind(
+		schema.GroupVersionKind{
+			Version: cluster.manager.version,
+			Group:   "cluster.x-k8s.io",
+			Kind:    "MachineDeployment",
+		},
+	)
+
+	labelSelector, err := labels.Parse(fmt.Sprintf("cluster.x-k8s.io/cluster-name=%s", cluster.name))
+	if err != nil {
+		return nil, err
+	}
+
+	if err = cluster.manager.runtimeClient.List(ctx, &machineDeployments, runtimeclient.MatchingLabelsSelector{Selector: labelSelector}); err != nil {
+		return nil, err
+	}
+
+	return &machineDeployments, nil
+}
+
+func (cluster *Cluster) sync(ctx context.Context) error {
+	cluster.cluster.SetGroupVersionKind(
+		schema.GroupVersionKind{
+			Version: cluster.manager.version,
+			Group:   "cluster.x-k8s.io",
+			Kind:    "Cluster",
+		},
+	)
+
+	clusterRef := types.NamespacedName{Namespace: cluster.namespace, Name: cluster.name}
+
+	return cluster.manager.runtimeClient.Get(ctx, clusterRef, &cluster.cluster)
 }
