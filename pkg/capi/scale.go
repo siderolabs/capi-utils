@@ -104,7 +104,7 @@ func (cluster *Cluster) Scale(ctx context.Context, replicas int, nodes NodeGroup
 	spec["replicas"] = replicas
 	object.Object["spec"] = spec
 
-	if err := cluster.manager.runtimeClient.Update(ctx, object); err != nil {
+	if err = cluster.manager.runtimeClient.Update(ctx, object); err != nil {
 		return err
 	}
 
@@ -113,9 +113,9 @@ func (cluster *Cluster) Scale(ctx context.Context, replicas int, nodes NodeGroup
 	// so wait a bit until it actually starts scaling
 	time.Sleep(2 * time.Second)
 
-	return retry.Constant(30*time.Minute, retry.WithUnits(10*time.Second), retry.WithErrorLogging(true)).Retry(func() error {
-		if err := cluster.manager.runtimeClient.Get(ctx, types.NamespacedName{Name: object.GetName(), Namespace: object.GetNamespace()}, object); err != nil {
-			return err
+	err = retry.Constant(30*time.Minute, retry.WithUnits(10*time.Second), retry.WithErrorLogging(true)).Retry(func() error {
+		if e := cluster.manager.runtimeClient.Get(ctx, types.NamespacedName{Name: object.GetName(), Namespace: object.GetNamespace()}, object); e != nil {
+			return e
 		}
 
 		if c := getReplicas(object, "replicas"); c != int64(replicas) {
@@ -124,6 +124,11 @@ func (cluster *Cluster) Scale(ctx context.Context, replicas int, nodes NodeGroup
 
 		return cluster.manager.CheckClusterReady(ctx, cluster)
 	})
+	if err != nil {
+		return err
+	}
+
+	return cluster.Sync(ctx)
 }
 
 func getReplicas(object *unstructured.Unstructured, key string) int64 {

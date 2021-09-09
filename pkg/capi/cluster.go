@@ -55,9 +55,9 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, name, namespace strin
 	return res, nil
 }
 
-// TalosClient returns new talos client for the CAPI cluster.
+// Sync updates nodes pool and recreates talos client.
 //nolint:gocyclo,cyclop
-func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, error) {
+func (cluster *Cluster) Sync(ctx context.Context) error {
 	var (
 		controlPlane unstructured.Unstructured
 		machines     unstructured.UnstructuredList
@@ -67,10 +67,6 @@ func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, e
 		workerNodes       = []string{}
 		configEndpoints   = []string{}
 	)
-
-	if cluster.client != nil {
-		return cluster.client, nil
-	}
 
 	machines.SetGroupVersionKind(
 		schema.GroupVersionKind{
@@ -88,43 +84,43 @@ func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, e
 
 	controlPlaneRef, err := getRef(cluster.cluster.Object, "spec", "controlPlaneRef")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	controlPlane.SetGroupVersionKind(controlPlaneRef.gvk)
 
 	if err = cluster.manager.runtimeClient.Get(ctx, controlPlaneRef.NamespacedName, &controlPlane); err != nil {
-		return nil, err
+		return err
 	}
 
 	if controlPlaneSelector, found, err = unstructured.NestedString(controlPlane.Object, "status", "selector"); err != nil {
-		return nil, err
+		return err
 	} else if !found {
-		return nil, fieldNotFound("status", "selector")
+		return fieldNotFound("status", "selector")
 	}
 
 	labelSelector, err := labels.Parse(controlPlaneSelector)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = cluster.manager.runtimeClient.List(ctx, &machines, runtimeclient.MatchingLabelsSelector{Selector: labelSelector}); err != nil {
-		return nil, err
+		return err
 	}
 
 	if len(machines.Items) < 1 {
-		return nil, fmt.Errorf("not enough machines found")
+		return fmt.Errorf("not enough machines found")
 	}
 
 	configRef, err := getRef(machines.Items[0].Object, "spec", "bootstrap", "configRef")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	talosConfig.SetGroupVersionKind(configRef.gvk)
 
 	if err = cluster.manager.runtimeClient.Get(ctx, configRef.NamespacedName, &talosConfig); err != nil {
-		return nil, err
+		return err
 	}
 
 	var (
@@ -133,20 +129,20 @@ func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, e
 	)
 
 	if talosConfigString, found, err = unstructured.NestedString(talosConfig.Object, "status", "talosConfig"); err != nil {
-		return nil, err
+		return err
 	} else if !found {
-		return nil, fieldNotFound("status", "talosConfig")
+		return fieldNotFound("status", "talosConfig")
 	}
 
 	clientConfig, err = clientconfig.FromString(talosConfigString)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	kubeconfig, err := cluster.manager.GetKubeconfig(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	options := capiclient.GetKubeconfigOptions{
@@ -157,22 +153,22 @@ func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, e
 
 	raw, err := cluster.manager.client.GetKubeconfig(options)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(raw))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, node := range nodes.Items {
@@ -191,7 +187,7 @@ func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, e
 	}
 
 	if len(configEndpoints) < 1 {
-		return nil, fmt.Errorf("failed to find control plane nodes")
+		return fmt.Errorf("failed to find control plane nodes")
 	}
 
 	clientConfig.Contexts[clientConfig.Context].Endpoints = configEndpoints
@@ -200,15 +196,27 @@ func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, e
 
 	talosClient, err = talosclient.New(ctx, talosclient.WithConfig(clientConfig))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cluster.client = talosClient
-
 	cluster.controlPlaneNodes = controlPlaneNodes
 	cluster.workerNodes = workerNodes
 
-	return talosClient, nil
+	return nil
+}
+
+// TalosClient returns new talos client for the CAPI cluster.
+func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, error) {
+	if cluster.client != nil {
+		return cluster.client, nil
+	}
+
+	if err := cluster.Sync(ctx); err != nil {
+		return nil, err
+	}
+
+	return cluster.client, nil
 }
 
 // Health runs the healthcheck for the cluster.
