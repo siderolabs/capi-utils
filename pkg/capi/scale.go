@@ -41,6 +41,7 @@ func MachineDeploymentName(name string) ScaleOption {
 }
 
 // Scale cluster nodes.
+//nolint:gocognit,gocyclo,cyclop
 func (cluster *Cluster) Scale(ctx context.Context, replicas int, nodes NodeGroup, setters ...ScaleOption) error {
 	var object *unstructured.Unstructured
 
@@ -119,10 +120,31 @@ func (cluster *Cluster) Scale(ctx context.Context, replicas int, nodes NodeGroup
 		}
 
 		if c := getReplicas(object, "replicas"); c != int64(replicas) {
-			return retry.ExpectedError(fmt.Errorf("expected %d, current replicas count: %d", replicas, c))
+			return retry.ExpectedErrorf("expected %d, current replicas count: %d", replicas, c)
 		}
 
-		return cluster.manager.CheckClusterReady(ctx, cluster)
+		if e := cluster.manager.CheckClusterReady(ctx, cluster); e != nil {
+			return e
+		}
+
+		if e := cluster.Sync(ctx); e != nil {
+			return e
+		}
+
+		var actualReplicas int
+
+		switch nodes {
+		case ControlPlaneNodes:
+			actualReplicas = len(cluster.controlPlaneNodes)
+		case WorkerNodes:
+			actualReplicas = len(cluster.workerNodes)
+		}
+
+		if actualReplicas != replicas {
+			return retry.ExpectedErrorf("get nodes expected %d, current nodes count: %d", replicas, actualReplicas)
+		}
+
+		return nil
 	})
 	if err != nil {
 		return err
