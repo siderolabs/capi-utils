@@ -1,6 +1,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED, PLEASE DO NOT EDIT.
 #
-# Generated on 2021-08-27T15:18:47Z by kres c09f1a6-dirty.
+# Generated on 2021-09-10T15:47:01Z by kres latest.
 
 # common variables
 
@@ -116,6 +116,20 @@ unit-tests-race:  ## Performs unit tests with race detection enabled.
 coverage:  ## Upload coverage data to codecov.io.
 	bash -c "bash <(curl -s https://codecov.io/bash) -f $(ARTIFACTS)/coverage.txt -X fix"
 
+.PHONY: $(ARTIFACTS)/capi-darwin-amd64
+$(ARTIFACTS)/capi-darwin-amd64:
+	@$(MAKE) local-capi-darwin-amd64 DEST=$(ARTIFACTS)
+
+.PHONY: capi-darwin-amd64
+capi-darwin-amd64: $(ARTIFACTS)/capi-darwin-amd64  ## Builds executable for capi-darwin-amd64.
+
+.PHONY: $(ARTIFACTS)/capi-darwin-arm64
+$(ARTIFACTS)/capi-darwin-arm64:
+	@$(MAKE) local-capi-darwin-arm64 DEST=$(ARTIFACTS)
+
+.PHONY: capi-darwin-arm64
+capi-darwin-arm64: $(ARTIFACTS)/capi-darwin-arm64  ## Builds executable for capi-darwin-arm64.
+
 .PHONY: $(ARTIFACTS)/capi-linux-amd64
 $(ARTIFACTS)/capi-linux-amd64:
 	@$(MAKE) local-capi-linux-amd64 DEST=$(ARTIFACTS)
@@ -123,8 +137,29 @@ $(ARTIFACTS)/capi-linux-amd64:
 .PHONY: capi-linux-amd64
 capi-linux-amd64: $(ARTIFACTS)/capi-linux-amd64  ## Builds executable for capi-linux-amd64.
 
+.PHONY: $(ARTIFACTS)/capi-linux-arm64
+$(ARTIFACTS)/capi-linux-arm64:
+	@$(MAKE) local-capi-linux-arm64 DEST=$(ARTIFACTS)
+
+.PHONY: capi-linux-arm64
+capi-linux-arm64: $(ARTIFACTS)/capi-linux-arm64  ## Builds executable for capi-linux-arm64.
+
+.PHONY: $(ARTIFACTS)/capi-linux-armv7
+$(ARTIFACTS)/capi-linux-armv7:
+	@$(MAKE) local-capi-linux-armv7 DEST=$(ARTIFACTS)
+
+.PHONY: capi-linux-armv7
+capi-linux-armv7: $(ARTIFACTS)/capi-linux-armv7  ## Builds executable for capi-linux-armv7.
+
+.PHONY: $(ARTIFACTS)/capi-windows-amd64.exe
+$(ARTIFACTS)/capi-windows-amd64.exe:
+	@$(MAKE) local-capi-windows-amd64.exe DEST=$(ARTIFACTS)
+
+.PHONY: capi-windows-amd64.exe
+capi-windows-amd64.exe: $(ARTIFACTS)/capi-windows-amd64.exe  ## Builds executable for capi-windows-amd64.exe.
+
 .PHONY: capi
-capi: capi-linux-amd64
+capi: capi-darwin-amd64 capi-darwin-arm64 capi-linux-amd64 capi-linux-arm64 capi-linux-armv7 capi-windows-amd64.exe  ## Builds executables for capi.
 
 .PHONY: lint-markdown
 lint-markdown:  ## Runs markdownlint.

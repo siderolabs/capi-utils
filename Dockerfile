@@ -2,7 +2,7 @@
 
 # THIS FILE WAS AUTOMATICALLY GENERATED, PLEASE DO NOT EDIT.
 #
-# Generated on 2021-08-27T15:19:31Z by kres c09f1a6-dirty.
+# Generated on 2021-09-10T15:47:01Z by kres latest.
 
 ARG TOOLCHAIN
 
@@ -47,11 +47,41 @@ COPY ./cmd ./cmd
 COPY ./pkg ./pkg
 RUN --mount=type=cache,target=/go/pkg go list -mod=readonly all >/dev/null
 
+# builds capi-darwin-amd64
+FROM base AS capi-darwin-amd64-build
+COPY --from=generate / /
+WORKDIR /src/cmd/capi
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOARCH=amd64 GOOS=darwin go build -ldflags "-s -w" -o /capi-darwin-amd64
+
+# builds capi-darwin-arm64
+FROM base AS capi-darwin-arm64-build
+COPY --from=generate / /
+WORKDIR /src/cmd/capi
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOARCH=arm64 GOOS=darwin go build -ldflags "-s -w" -o /capi-darwin-arm64
+
 # builds capi-linux-amd64
 FROM base AS capi-linux-amd64-build
 COPY --from=generate / /
 WORKDIR /src/cmd/capi
-RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg go build -ldflags "-s -w" -o /capi-linux-amd64
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOARCH=amd64 GOOS=linux go build -ldflags "-s -w" -o /capi-linux-amd64
+
+# builds capi-linux-arm64
+FROM base AS capi-linux-arm64-build
+COPY --from=generate / /
+WORKDIR /src/cmd/capi
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOARCH=arm64 GOOS=linux go build -ldflags "-s -w" -o /capi-linux-arm64
+
+# builds capi-linux-armv7
+FROM base AS capi-linux-armv7-build
+COPY --from=generate / /
+WORKDIR /src/cmd/capi
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOARCH=arm GOARM=7 GOOS=linux go build -ldflags "-s -w" -o /capi-linux-armv7
+
+# builds capi-windows-amd64.exe
+FROM base AS capi-windows-amd64.exe-build
+COPY --from=generate / /
+WORKDIR /src/cmd/capi
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOARCH=amd64 GOOS=windows go build -ldflags "-s -w" -o /capi-windows-amd64.exe
 
 # runs gofumpt
 FROM base AS lint-gofumpt
@@ -75,8 +105,23 @@ FROM base AS unit-tests-run
 ARG TESTPKGS
 RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg --mount=type=cache,target=/tmp go test -v -covermode=atomic -coverprofile=coverage.txt -coverpkg=${TESTPKGS} -count 1 ${TESTPKGS}
 
+FROM scratch AS capi-darwin-amd64
+COPY --from=capi-darwin-amd64-build /capi-darwin-amd64 /capi-darwin-amd64
+
+FROM scratch AS capi-darwin-arm64
+COPY --from=capi-darwin-arm64-build /capi-darwin-arm64 /capi-darwin-arm64
+
 FROM scratch AS capi-linux-amd64
 COPY --from=capi-linux-amd64-build /capi-linux-amd64 /capi-linux-amd64
+
+FROM scratch AS capi-linux-arm64
+COPY --from=capi-linux-arm64-build /capi-linux-arm64 /capi-linux-arm64
+
+FROM scratch AS capi-linux-armv7
+COPY --from=capi-linux-armv7-build /capi-linux-armv7 /capi-linux-armv7
+
+FROM scratch AS capi-windows-amd64.exe
+COPY --from=capi-windows-amd64.exe-build /capi-windows-amd64.exe /capi-windows-amd64.exe
 
 FROM scratch AS unit-tests
 COPY --from=unit-tests-run /src/coverage.txt /coverage.txt
