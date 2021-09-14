@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -25,6 +27,7 @@ import (
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/talos-systems/capi-utils/pkg/capi/infrastructure"
+	"github.com/talos-systems/capi-utils/pkg/constants"
 )
 
 // Manager installs and controls cluster API installation.
@@ -150,49 +153,19 @@ func (clusterAPI *Manager) Install(ctx context.Context) error {
 		return err
 	}
 
-	var (
-		shouldRunInit bool
-		installed     bool
-	)
-
-	if len(clusterAPI.options.InfrastructureProviders) == 0 {
-		return fmt.Errorf("should have at least one infrastructure provider installed")
-	}
-
-	providers := make([]string, len(clusterAPI.options.InfrastructureProviders))
-	for i, provider := range clusterAPI.options.InfrastructureProviders {
-		providers[i] = provider.Name()
-
-		if installed, err = provider.IsInstalled(ctx, clusterAPI.clientset); err != nil {
-			return err
-		}
-
-		if !installed {
-			shouldRunInit = true
-		}
-
-		if provider.Version() != "" {
-			providers[i] += ":" + provider.Version()
-		}
-
-		if err = provider.PreInstall(); err != nil {
+	// nb: We use the same call to Manager.Install for both core and infra installs
+	// This check ensures we don't try to install core if the provider string is empty,
+	// which it would be during an infra install
+	if clusterAPI.options.CoreProvider != "" {
+		err = clusterAPI.InstallCore(ctx, kubeconfig)
+		if err != nil {
 			return err
 		}
 	}
 
-	opts := client.InitOptions{
-		Kubeconfig:              kubeconfig,
-		CoreProvider:            clusterAPI.options.CoreProvider,
-		BootstrapProviders:      clusterAPI.options.BootstrapProviders,
-		ControlPlaneProviders:   clusterAPI.options.ControlPlaneProviders,
-		InfrastructureProviders: providers,
-		TargetNamespace:         "",
-		WatchingNamespace:       "",
-		LogUsageInstructions:    false,
-	}
-
-	if shouldRunInit {
-		if _, err = clusterAPI.client.Init(opts); err != nil {
+	for _, provider := range clusterAPI.options.InfrastructureProviders {
+		err = clusterAPI.InstallProvider(ctx, kubeconfig, provider)
+		if err != nil {
 			return err
 		}
 	}
@@ -204,6 +177,79 @@ func (clusterAPI *Manager) Install(ctx context.Context) error {
 	}
 
 	return clusterAPI.FetchState(ctx)
+}
+
+// InstallCore installs only core, global watched components (capi, cabpt, cacppt).
+func (clusterAPI *Manager) InstallCore(ctx context.Context, kubeconfig client.Kubeconfig) error {
+	installed, err := isCoreInstalled(ctx, clusterAPI.clientset)
+	if err != nil {
+		return err
+	}
+
+	if !installed {
+		fmt.Println("initializing the core capi components")
+		// Initialize everything but the infra providers, as we want to specify target
+		// namespaces for those.
+		coreOpts := client.InitOptions{
+			Kubeconfig:              kubeconfig,
+			CoreProvider:            clusterAPI.options.CoreProvider,
+			BootstrapProviders:      clusterAPI.options.BootstrapProviders,
+			ControlPlaneProviders:   clusterAPI.options.ControlPlaneProviders,
+			InfrastructureProviders: []string{},
+			TargetNamespace:         "",
+			WatchingNamespace:       "",
+			LogUsageInstructions:    false,
+		}
+		if _, err = clusterAPI.client.Init(coreOpts); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// InstallProvider installs a specific infrastructure provider and allows namespacing of
+// the provider itself and its "watches".
+func (clusterAPI *Manager) InstallProvider(ctx context.Context, kubeconfig client.Kubeconfig, provider infrastructure.Provider) error {
+	var (
+		installed bool
+		err       error
+	)
+
+	providerString := provider.Name()
+
+	if provider.Version() != "" {
+		providerString += ":" + provider.Version()
+	}
+
+	if installed, err = provider.IsInstalled(ctx, clusterAPI.clientset); err != nil {
+		return err
+	}
+
+	if !installed {
+		fmt.Printf("initializing infrastructure provider %s\n", providerString)
+
+		if err = provider.PreInstall(); err != nil {
+			return err
+		}
+
+		infraOpts := client.InitOptions{
+			Kubeconfig:              kubeconfig,
+			CoreProvider:            "",
+			BootstrapProviders:      []string{},
+			ControlPlaneProviders:   []string{},
+			InfrastructureProviders: []string{providerString},
+			TargetNamespace:         provider.Namespace(),
+			WatchingNamespace:       provider.WatchingNamespace(),
+			LogUsageInstructions:    false,
+		}
+
+		if _, err = clusterAPI.client.Init(infraOpts); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // FetchState fetches infra providers and installed CAPI version if any.
@@ -348,4 +394,17 @@ func getRef(in map[string]interface{}, keys ...string) (*ref, error) {
 
 func fieldNotFound(fields ...string) error {
 	return fmt.Errorf("failed to find field %s", strings.Join(fields, "."))
+}
+
+func isCoreInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error) {
+	_, err := clientset.CoreV1().Namespaces().Get(ctx, constants.CoreCAPINamespace, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
 }

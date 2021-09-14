@@ -12,12 +12,16 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
+
+	"github.com/talos-systems/capi-utils/pkg/constants"
 )
 
 // Provider defines an interface for the infrastructure provider.
 type Provider interface {
 	Name() string
+	Namespace() string
 	Version() string
+	WatchingNamespace() string
 	Configure(interface{}) error
 	PreInstall() error
 	IsInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error)
@@ -25,18 +29,53 @@ type Provider interface {
 	WaitReady(context.Context, *kubernetes.Clientset) error
 }
 
-// NewProvider creates a new provider from a specified type.
-func NewProvider(providerType string) (Provider, error) {
-	parts := strings.Split(providerType, ":")
+// ProviderOptions is the functional options struct.
+type ProviderOptions struct {
+	ProviderNS string
+	WatchingNS string
+}
 
+// ProviderOption is the functional options func.
+type ProviderOption func(*ProviderOptions)
+
+// WithProviderNS sets the namespace to something non-default.
+func WithProviderNS(ns string) ProviderOption {
+	return func(opts *ProviderOptions) {
+		opts.ProviderNS = ns
+	}
+}
+
+// WithWatchingNS sets the watching namespace to something non-global.
+func WithWatchingNS(ns string) ProviderOption {
+	return func(opts *ProviderOptions) {
+		opts.WatchingNS = ns
+	}
+}
+
+// NewProvider creates a new provider from a specified type.
+func NewProvider(providerType string, opts ...ProviderOption) (Provider, error) {
+	// Handle any functional options
+	providerOpts := &ProviderOptions{}
+
+	for _, opt := range opts {
+		opt(providerOpts)
+	}
+
+	// Parse out version from provider string
 	var version string
+
+	parts := strings.Split(providerType, ":")
 
 	if len(parts) > 1 {
 		version = parts[1]
 	}
 
-	if parts[0] == AWSProviderName {
-		return NewAWSProvider(version)
+	if parts[0] == constants.AWSProviderName {
+		return NewAWSProvider(
+			version,
+			providerOpts.ProviderNS,
+			providerOpts.WatchingNS,
+		)
 	}
 
 	return nil, fmt.Errorf("unknown infrastructure provider type %s", parts[0])

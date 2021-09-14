@@ -11,6 +11,7 @@ import (
 
 	"github.com/talos-systems/capi-utils/pkg/capi"
 	"github.com/talos-systems/capi-utils/pkg/capi/infrastructure"
+	"github.com/talos-systems/capi-utils/pkg/constants"
 )
 
 var clusterCreateCmdFlags struct {
@@ -33,7 +34,7 @@ var clusterCreateCmd = &cobra.Command{
 			capi.WithClusterNamespace(clusterCmdFlags.clusterNamespace),
 		}
 
-		if deployOptions.Provider == "" || deployOptions.Provider == infrastructure.AWSProviderName {
+		if deployOptions.Provider == "" || deployOptions.Provider == constants.AWSProviderName {
 			if clusterCreateCmdFlags.templatePath == "" {
 				deployOptions.Template = infrastructure.AWSTalosTemplate
 			}
