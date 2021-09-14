@@ -18,23 +18,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
+
+	"github.com/talos-systems/capi-utils/pkg/constants"
 )
 
 // AWSTalosTemplate default template for AWS cluster on Talos.
 //go:embed aws/aws.yaml
 var AWSTalosTemplate []byte
 
-const (
-	// AWSProviderName is the string id of the AWS provider.
-	AWSProviderName = "aws"
-	// AWSCAPANamespace default AWS provider CAPI system namespace.
-	AWSCAPANamespace = "capa-system"
-)
-
 // NewAWSProvider creates new AWS infrastructure provider.
-func NewAWSProvider(version string) (*AWSProvider, error) {
+func NewAWSProvider(version, providerNS, watchingNS string) (*AWSProvider, error) {
+	if providerNS == "" {
+		providerNS = constants.AWSCAPANamespace
+	}
+
 	return &AWSProvider{
 		ProviderVersion: version,
+		ProviderNS:      providerNS,
+		WatchingNS:      watchingNS,
 	}, nil
 }
 
@@ -42,6 +43,8 @@ func NewAWSProvider(version string) (*AWSProvider, error) {
 type AWSProvider struct {
 	B64EncodedCredentials string
 	ProviderVersion       string
+	ProviderNS            string
+	WatchingNS            string
 }
 
 // NewAWSSetupOptions creates new AWSSetupOptions.
@@ -51,7 +54,9 @@ func NewAWSSetupOptions() *AWSSetupOptions {
 
 // AWSSetupOptions AWS specific setup options.
 type AWSSetupOptions struct {
-	AWSCredentials string
+	AWSCredentials       string
+	AWSProviderNamespace string
+	AWSWatchingNamespace string
 }
 
 // AWSDeployOptions defines provider specific settings for cluster deployment.
@@ -100,7 +105,17 @@ func (s *AWSProvider) Configure(providerOptions interface{}) error {
 
 // Name implements Provider interface.
 func (s *AWSProvider) Name() string {
-	return AWSProviderName
+	return constants.AWSProviderName
+}
+
+// Namespace implements Provider interface.
+func (s *AWSProvider) Namespace() string {
+	return s.ProviderNS
+}
+
+// WatchingNamespace implements Provider interface.
+func (s *AWSProvider) WatchingNamespace() string {
+	return s.WatchingNS
 }
 
 // Version implements Provider interface.
@@ -128,7 +143,7 @@ func (s *AWSProvider) PreInstall() error {
 
 // IsInstalled implements Provider interface.
 func (s *AWSProvider) IsInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error) {
-	_, err := clientset.CoreV1().Namespaces().Get(ctx, AWSCAPANamespace, metav1.GetOptions{})
+	_, err := clientset.CoreV1().Namespaces().Get(ctx, s.Namespace(), metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
@@ -188,7 +203,7 @@ func (s *AWSProvider) GetClusterTemplate(client client.Client, opts client.GetCl
 // WaitReady implements Provider interface.
 func (s *AWSProvider) WaitReady(ctx context.Context, clientset *kubernetes.Clientset) error {
 	return retry.Constant(10*time.Minute, retry.WithUnits(10*time.Second), retry.WithErrorLogging(true)).Retry(func() error {
-		if _, err := clientset.CoreV1().Namespaces().Get(ctx, AWSCAPANamespace, metav1.GetOptions{}); err != nil {
+		if _, err := clientset.CoreV1().Namespaces().Get(ctx, s.Namespace(), metav1.GetOptions{}); err != nil {
 			return retry.ExpectedError(err)
 		}
 
@@ -197,7 +212,7 @@ func (s *AWSProvider) WaitReady(ctx context.Context, clientset *kubernetes.Clien
 			deployment *v1.Deployment
 		)
 
-		if deployment, err = clientset.AppsV1().Deployments(AWSCAPANamespace).Get(ctx, "capa-controller-manager", metav1.GetOptions{}); err != nil {
+		if deployment, err = clientset.AppsV1().Deployments(s.Namespace()).Get(ctx, "capa-controller-manager", metav1.GetOptions{}); err != nil {
 			return retry.ExpectedError(err)
 		}
 

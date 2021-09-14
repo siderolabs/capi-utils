@@ -6,7 +6,6 @@ package cmd
 
 // Options control the sidero testing.
 type Options struct {
-	BootstrapClusterName string
 	ClusterctlConfigPath string
 	CoreProvider         string
 
