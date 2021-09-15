@@ -396,8 +396,8 @@ func fieldNotFound(fields ...string) error {
 	return fmt.Errorf("failed to find field %s", strings.Join(fields, "."))
 }
 
-func isCoreInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error) {
-	_, err := clientset.CoreV1().Namespaces().Get(ctx, constants.CoreCAPINamespace, metav1.GetOptions{})
+func isCoreInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error) { //nolint: unparam
+	_, err := clientset.CoreV1().Namespaces().Get(constants.CoreCAPINamespace, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
