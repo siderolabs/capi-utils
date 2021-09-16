@@ -183,6 +183,11 @@ func (clusterAPI *Manager) GetClient(ctx context.Context) (client runtimeclient.
 	return clusterAPI.runtimeClient, err
 }
 
+// GetClientSet returns a kubernetes clientset to use.
+func (clusterAPI *Manager) GetClientSet() *kubernetes.Clientset {
+	return clusterAPI.clientset
+}
+
 // Install the Manager components and wait for them to be ready.
 func (clusterAPI *Manager) Install(ctx context.Context) error {
 	kubeconfig, err := clusterAPI.GetKubeconfig(ctx)
