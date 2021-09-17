@@ -334,6 +334,11 @@ func (clusterAPI *Manager) FetchState(ctx context.Context) error {
 	return nil
 }
 
+// Version returns installed CAPI version.
+func (clusterAPI *Manager) Version() string {
+	return clusterAPI.version
+}
+
 type ref struct {
 	types.NamespacedName
 	gvk schema.GroupVersionKind
