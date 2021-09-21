@@ -16,6 +16,9 @@ import (
 	"github.com/talos-systems/capi-utils/pkg/constants"
 )
 
+// Variables is a map of key value pairs of config parameters.
+type Variables map[string]string
+
 // Provider defines an interface for the infrastructure provider.
 type Provider interface {
 	Name() string
@@ -23,9 +26,10 @@ type Provider interface {
 	Version() string
 	WatchingNamespace() string
 	Configure(interface{}) error
-	PreInstall() error
+	ProviderVars() (Variables, error)
+	ClusterVars(interface{}) (Variables, error)
 	IsInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error)
-	GetClusterTemplate(client.Client, client.GetClusterTemplateOptions, interface{}) (client.Template, error)
+	GetClusterTemplate(client.Client, client.GetClusterTemplateOptions) (client.Template, error)
 	WaitReady(context.Context, *kubernetes.Clientset) error
 }
 

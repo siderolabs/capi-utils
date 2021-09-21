@@ -202,19 +202,13 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 	}
 
 	// set up env variables common for all providers
-	vars := map[string]string{
+	clusterAPI.patchConfig(infrastructure.Variables{
 		"TALOS_VERSION":               options.TalosVersion,
 		"KUBERNETES_VERSION":          options.KubernetesVersion,
 		"CLUSTER_NAME":                options.ClusterName,
 		"CONTROL_PLANE_MACHINE_COUNT": strconv.FormatInt(options.ControlPlaneNodes, 10),
 		"WORKER_MACHINE_COUNT":        strconv.FormatInt(options.WorkerNodes, 10),
-	}
-
-	for key, value := range vars {
-		if err := os.Setenv(key, value); err != nil {
-			return nil, err
-		}
-	}
+	})
 
 	templateOptions := client.GetClusterTemplateOptions{
 		Kubeconfig:               clusterAPI.kubeconfig,
@@ -240,7 +234,14 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 		defer file.Close() //nolint:errcheck
 	}
 
-	template, err := provider.GetClusterTemplate(clusterAPI.client, templateOptions, options.providerOptions)
+	vars, err := provider.ClusterVars(options.providerOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	clusterAPI.patchConfig(vars)
+
+	template, err := provider.GetClusterTemplate(clusterAPI.client, templateOptions)
 	if err != nil {
 		return nil, err
 	}

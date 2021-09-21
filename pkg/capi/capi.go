@@ -24,6 +24,7 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/talos-systems/capi-utils/pkg/capi/infrastructure"
@@ -39,6 +40,7 @@ type Manager struct {
 	runtimeClient runtimeclient.Client
 	version       string
 	providers     []infrastructure.Provider
+	cfg           *Config
 
 	options Options
 }
@@ -58,11 +60,15 @@ type Options struct {
 func NewManager(ctx context.Context, options Options) (*Manager, error) {
 	clusterAPI := &Manager{
 		options: options,
+		cfg:     newConfig(),
 	}
 
-	var err error
+	configClient, err := config.New(options.ClusterctlConfigPath, config.InjectReader(clusterAPI.cfg))
+	if err != nil {
+		return nil, err
+	}
 
-	clusterAPI.client, err = client.New(options.ClusterctlConfigPath)
+	clusterAPI.client, err = client.New("", client.InjectConfig(configClient))
 	if err != nil {
 		return nil, err
 	}
@@ -200,6 +206,7 @@ func (clusterAPI *Manager) InstallCore(ctx context.Context, kubeconfig client.Ku
 			WatchingNamespace:       "",
 			LogUsageInstructions:    false,
 		}
+
 		if _, err = clusterAPI.client.Init(coreOpts); err != nil {
 			return err
 		}
@@ -229,9 +236,12 @@ func (clusterAPI *Manager) InstallProvider(ctx context.Context, kubeconfig clien
 	if !installed {
 		fmt.Printf("initializing infrastructure provider %s\n", providerString)
 
-		if err = provider.PreInstall(); err != nil {
+		vars, err := provider.ProviderVars()
+		if err != nil {
 			return err
 		}
+
+		clusterAPI.patchConfig(vars)
 
 		infraOpts := client.InitOptions{
 			Kubeconfig:              kubeconfig,
@@ -337,6 +347,14 @@ func (clusterAPI *Manager) FetchState(ctx context.Context) error {
 // Version returns installed CAPI version.
 func (clusterAPI *Manager) Version() string {
 	return clusterAPI.version
+}
+
+func (clusterAPI *Manager) patchConfig(vars infrastructure.Variables) {
+	for key, value := range vars {
+		if value != "" {
+			clusterAPI.cfg.Set(key, value)
+		}
+	}
 }
 
 type ref struct {

@@ -8,7 +8,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -123,22 +122,12 @@ func (s *AWSProvider) Version() string {
 	return s.ProviderVersion
 }
 
-// PreInstall implements Provider interface.
-func (s *AWSProvider) PreInstall() error {
-	vars := map[string]string{
-		"AWS_B64ENCODED_CREDENTIALS": s.B64EncodedCredentials,
-	}
+// ProviderVars returns config overrides for the provider installation.
+func (s *AWSProvider) ProviderVars() (Variables, error) {
+	vars := make(Variables)
+	vars["AWS_B64ENCODED_CREDENTIALS"] = s.B64EncodedCredentials
 
-	for key, value := range vars {
-		if value != "" {
-			err := os.Setenv(key, value)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return vars, nil
 }
 
 // IsInstalled implements Provider interface.
@@ -152,25 +141,32 @@ func (s *AWSProvider) IsInstalled(ctx context.Context, clientset *kubernetes.Cli
 		return false, err
 	}
 
+	if _, err := clientset.AppsV1().Deployments(s.Namespace()).Get("capa-controller-master", metav1.GetOptions{}); err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
 	return true, nil
 }
 
-// GetClusterTemplate implements Provider interface.
-func (s *AWSProvider) GetClusterTemplate(client client.Client, opts client.GetClusterTemplateOptions, providerOptions interface{}) (client.Template, error) {
+// ClusterVars returns config overrides for template generation.
+func (s *AWSProvider) ClusterVars(opts interface{}) (Variables, error) {
 	var (
 		deployOptions = NewAWSDeployOptions()
 		ok            bool
 	)
 
-	if providerOptions != nil {
-		deployOptions, ok = providerOptions.(*AWSDeployOptions)
+	if opts != nil {
+		deployOptions, ok = opts.(*AWSDeployOptions)
 		if !ok {
 			return nil, fmt.Errorf("AWS deployment provider expects aws.DeployOptions as the deployment options")
 		}
 	}
 
-	// TODO: all these settings should probably go through the config instead of using env variables.
-	vars := map[string]string{
+	vars := Variables{
 		"AWS_REGION":                        deployOptions.Region,
 		"AWS_VPC_ID":                        deployOptions.VPCID,
 		"AWS_SUBNET":                        deployOptions.Subnet,
@@ -188,15 +184,11 @@ func (s *AWSProvider) GetClusterTemplate(client client.Client, opts client.GetCl
 		"AWS_CLOUD_PROVIDER_VERSION":        deployOptions.CloudProviderVersion,
 	}
 
-	for key, value := range vars {
-		if value != "" {
-			err := os.Setenv(key, value)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
+	return vars, nil
+}
 
+// GetClusterTemplate implements Provider interface.
+func (s *AWSProvider) GetClusterTemplate(client client.Client, opts client.GetClusterTemplateOptions) (client.Template, error) {
 	return client.GetClusterTemplate(opts)
 }
 

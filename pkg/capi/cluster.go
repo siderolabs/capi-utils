@@ -221,7 +221,7 @@ func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, e
 
 // Health runs the healthcheck for the cluster.
 func (cluster *Cluster) Health(ctx context.Context) error {
-	return retry.Constant(5*time.Minute, retry.WithUnits(10*time.Second)).Retry(func() error {
+	return retry.Constant(5*time.Minute, retry.WithUnits(10*time.Second)).RetryWithContext(ctx, func(ctx context.Context) error {
 		// retry health checks as sometimes bootstrap bootkube issues break the check
 		return retry.ExpectedError(cluster.health(ctx))
 	})
