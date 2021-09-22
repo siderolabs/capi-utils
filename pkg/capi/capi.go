@@ -203,7 +203,6 @@ func (clusterAPI *Manager) InstallCore(ctx context.Context, kubeconfig client.Ku
 			ControlPlaneProviders:   clusterAPI.options.ControlPlaneProviders,
 			InfrastructureProviders: []string{},
 			TargetNamespace:         "",
-			WatchingNamespace:       "",
 			LogUsageInstructions:    false,
 		}
 
@@ -250,7 +249,6 @@ func (clusterAPI *Manager) InstallProvider(ctx context.Context, kubeconfig clien
 			ControlPlaneProviders:   []string{},
 			InfrastructureProviders: []string{providerString},
 			TargetNamespace:         provider.Namespace(),
-			WatchingNamespace:       provider.WatchingNamespace(),
 			LogUsageInstructions:    false,
 		}
 
@@ -420,7 +418,7 @@ func fieldNotFound(fields ...string) error {
 }
 
 func isCoreInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error) { //nolint: unparam
-	_, err := clientset.CoreV1().Namespaces().Get(constants.CoreCAPINamespace, metav1.GetOptions{})
+	_, err := clientset.CoreV1().Namespaces().Get(ctx, constants.CoreCAPINamespace, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil

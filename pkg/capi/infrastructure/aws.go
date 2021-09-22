@@ -132,7 +132,7 @@ func (s *AWSProvider) ProviderVars() (Variables, error) {
 
 // IsInstalled implements Provider interface.
 func (s *AWSProvider) IsInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error) {
-	_, err := clientset.CoreV1().Namespaces().Get(s.Namespace(), metav1.GetOptions{})
+	_, err := clientset.CoreV1().Namespaces().Get(ctx, s.Namespace(), metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
@@ -141,7 +141,7 @@ func (s *AWSProvider) IsInstalled(ctx context.Context, clientset *kubernetes.Cli
 		return false, err
 	}
 
-	if _, err := clientset.AppsV1().Deployments(s.Namespace()).Get("capa-controller-master", metav1.GetOptions{}); err != nil {
+	if _, err := clientset.AppsV1().Deployments(s.Namespace()).Get(ctx, "capa-controller-master", metav1.GetOptions{}); err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
 		}
@@ -195,7 +195,7 @@ func (s *AWSProvider) GetClusterTemplate(client client.Client, opts client.GetCl
 // WaitReady implements Provider interface.
 func (s *AWSProvider) WaitReady(ctx context.Context, clientset *kubernetes.Clientset) error {
 	return retry.Constant(10*time.Minute, retry.WithUnits(10*time.Second), retry.WithErrorLogging(true)).Retry(func() error {
-		if _, err := clientset.CoreV1().Namespaces().Get(s.Namespace(), metav1.GetOptions{}); err != nil {
+		if _, err := clientset.CoreV1().Namespaces().Get(ctx, s.Namespace(), metav1.GetOptions{}); err != nil {
 			return retry.ExpectedError(err)
 		}
 
@@ -204,7 +204,7 @@ func (s *AWSProvider) WaitReady(ctx context.Context, clientset *kubernetes.Clien
 			deployment *v1.Deployment
 		)
 
-		if deployment, err = clientset.AppsV1().Deployments(s.Namespace()).Get("capa-controller-manager", metav1.GetOptions{}); err != nil {
+		if deployment, err = clientset.AppsV1().Deployments(s.Namespace()).Get(ctx, "capa-controller-manager", metav1.GetOptions{}); err != nil {
 			return retry.ExpectedError(err)
 		}
 
