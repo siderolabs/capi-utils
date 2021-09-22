@@ -166,7 +166,7 @@ func (cluster *Cluster) Sync(ctx context.Context) error {
 		return err
 	}
 
-	nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}

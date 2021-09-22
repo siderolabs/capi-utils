@@ -63,12 +63,17 @@ func NewManager(ctx context.Context, options Options) (*Manager, error) {
 		cfg:     newConfig(),
 	}
 
+	err := clusterAPI.cfg.Init(options.ClusterctlConfigPath)
+	if err != nil {
+		return nil, err
+	}
+
 	configClient, err := config.New(options.ClusterctlConfigPath, config.InjectReader(clusterAPI.cfg))
 	if err != nil {
 		return nil, err
 	}
 
-	clusterAPI.client, err = client.New("", client.InjectConfig(configClient))
+	clusterAPI.client, err = client.New(options.ClusterctlConfigPath, client.InjectConfig(configClient))
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +208,6 @@ func (clusterAPI *Manager) InstallCore(ctx context.Context, kubeconfig client.Ku
 			ControlPlaneProviders:   clusterAPI.options.ControlPlaneProviders,
 			InfrastructureProviders: []string{},
 			TargetNamespace:         "",
-			WatchingNamespace:       "",
 			LogUsageInstructions:    false,
 		}
 
@@ -250,7 +254,6 @@ func (clusterAPI *Manager) InstallProvider(ctx context.Context, kubeconfig clien
 			ControlPlaneProviders:   []string{},
 			InfrastructureProviders: []string{providerString},
 			TargetNamespace:         provider.Namespace(),
-			WatchingNamespace:       provider.WatchingNamespace(),
 			LogUsageInstructions:    false,
 		}
 
@@ -419,8 +422,8 @@ func fieldNotFound(fields ...string) error {
 	return fmt.Errorf("failed to find field %s", strings.Join(fields, "."))
 }
 
-func isCoreInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error) { //nolint: unparam
-	_, err := clientset.CoreV1().Namespaces().Get(constants.CoreCAPINamespace, metav1.GetOptions{})
+func isCoreInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error) {
+	_, err := clientset.CoreV1().Namespaces().Get(ctx, constants.CoreCAPINamespace, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
