@@ -24,6 +24,7 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/cluster"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -47,6 +48,7 @@ type Manager struct {
 
 // Options for the CAPI installer.
 type Options struct {
+	Proxy                   cluster.Proxy
 	Kubeconfig              client.Kubeconfig
 	ClusterctlConfigPath    string
 	CoreProvider            string
@@ -73,30 +75,54 @@ func NewManager(ctx context.Context, options Options) (*Manager, error) {
 		return nil, err
 	}
 
-	clusterAPI.client, err = client.New(options.ClusterctlConfigPath, client.InjectConfig(configClient))
+	opts := []client.Option{
+		client.InjectConfig(configClient),
+	}
+
+	if options.Proxy != nil {
+		opts = append(opts, client.InjectClusterClientFactory(func(input client.ClusterClientFactoryInput) (cluster.Client, error) {
+			return cluster.New(
+				cluster.Kubeconfig(input.Kubeconfig),
+				configClient,
+				cluster.InjectYamlProcessor(input.Processor),
+				cluster.InjectProxy(options.Proxy),
+			), nil
+		}))
+	}
+
+	clusterAPI.client, err = client.New(options.ClusterctlConfigPath, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	clusterConfig, err := clusterAPI.GetKubeconfig(ctx)
-	if err != nil {
-		return nil, err
-	}
+	if options.Proxy != nil {
+		clusterAPI.config, err = options.Proxy.GetConfig()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		var clusterConfig client.Kubeconfig
 
-	clusterAPI.config, err = clientcmd.BuildConfigFromKubeconfigGetter("", func() (*clientcmdapi.Config, error) {
-		c, e := clientcmd.LoadFromFile(clusterConfig.Path)
-		if e != nil {
-			return nil, e
+		clusterConfig, err = clusterAPI.GetKubeconfig(ctx)
+		if err != nil {
+			return nil, err
 		}
 
-		if clusterAPI.options.ContextName == "" {
-			clusterAPI.options.ContextName = c.CurrentContext
-		}
+		clusterAPI.config, err = clientcmd.BuildConfigFromKubeconfigGetter("", func() (*clientcmdapi.Config, error) {
+			c, e := clientcmd.LoadFromFile(clusterConfig.Path)
+			if e != nil {
+				return nil, e
+			}
 
-		return c, nil
-	})
-	if err != nil {
-		return nil, err
+			if clusterAPI.options.ContextName == "" {
+				clusterAPI.options.ContextName = c.CurrentContext
+			}
+
+			return c, nil
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	clusterAPI.clientset, err = kubernetes.NewForConfig(clusterAPI.config)
@@ -299,7 +325,7 @@ func (clusterAPI *Manager) FetchState(ctx context.Context) error {
 	})
 
 	if err = clusterAPI.runtimeClient.List(ctx, providers); err != nil {
-		return err
+		return fmt.Errorf("failed to list providers %w", err)
 	}
 
 	var (

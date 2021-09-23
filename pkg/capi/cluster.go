@@ -33,6 +33,7 @@ import (
 type Cluster struct {
 	manager           *Manager
 	client            *talosclient.Client
+	clientConfig      *clientconfig.Config
 	cluster           unstructured.Unstructured
 	name              string
 	namespace         string
@@ -123,10 +124,7 @@ func (cluster *Cluster) Sync(ctx context.Context) error {
 		return err
 	}
 
-	var (
-		clientConfig      *clientconfig.Config
-		talosConfigString string
-	)
+	var talosConfigString string
 
 	if talosConfigString, found, err = unstructured.NestedString(talosConfig.Object, "status", "talosConfig"); err != nil {
 		return err
@@ -134,7 +132,7 @@ func (cluster *Cluster) Sync(ctx context.Context) error {
 		return fieldNotFound("status", "talosConfig")
 	}
 
-	clientConfig, err = clientconfig.FromString(talosConfigString)
+	cluster.clientConfig, err = clientconfig.FromString(talosConfigString)
 
 	if err != nil {
 		return err
@@ -190,11 +188,11 @@ func (cluster *Cluster) Sync(ctx context.Context) error {
 		return fmt.Errorf("failed to find control plane nodes")
 	}
 
-	clientConfig.Contexts[clientConfig.Context].Endpoints = configEndpoints
+	cluster.clientConfig.Contexts[cluster.clientConfig.Context].Endpoints = configEndpoints
 
 	var talosClient *talosclient.Client
 
-	talosClient, err = talosclient.New(ctx, talosclient.WithConfig(clientConfig))
+	talosClient, err = talosclient.New(ctx, talosclient.WithConfig(cluster.clientConfig))
 	if err != nil {
 		return err
 	}
@@ -217,6 +215,19 @@ func (cluster *Cluster) TalosClient(ctx context.Context) (*talosclient.Client, e
 	}
 
 	return cluster.client, nil
+}
+
+// TalosConfig returns talosconfig for the cluster.
+func (cluster *Cluster) TalosConfig(ctx context.Context) (*clientconfig.Config, error) {
+	if cluster.clientConfig != nil {
+		return cluster.clientConfig, nil
+	}
+
+	if err := cluster.Sync(ctx); err != nil {
+		return nil, err
+	}
+
+	return cluster.clientConfig, nil
 }
 
 // Health runs the healthcheck for the cluster.
