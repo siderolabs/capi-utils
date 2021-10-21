@@ -6,7 +6,6 @@ package infrastructure
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"strconv"
 	"time"
@@ -20,10 +19,6 @@ import (
 
 	"github.com/talos-systems/capi-utils/pkg/constants"
 )
-
-// AWSTalosTemplate default template for AWS cluster on Talos.
-//go:embed aws/aws.yaml
-var AWSTalosTemplate []byte
 
 // NewAWSProvider creates new AWS infrastructure provider.
 func NewAWSProvider(version, providerNS, watchingNS string) (*AWSProvider, error) {

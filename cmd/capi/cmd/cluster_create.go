@@ -35,10 +35,6 @@ var clusterCreateCmd = &cobra.Command{
 		}
 
 		if deployOptions.Provider == "" || deployOptions.Provider == constants.AWSProviderName {
-			if clusterCreateCmdFlags.templatePath == "" {
-				deployOptions.Template = infrastructure.AWSTalosTemplate
-			}
-
 			opts = append(
 				opts,
 				capi.WithProviderOptions(awsDeployOptions),
@@ -61,7 +57,8 @@ var clusterCreateCmd = &cobra.Command{
 func init() {
 	clusterCmd.AddCommand(clusterCreateCmd)
 
-	clusterCreateCmd.Flags().StringVarP(&clusterCreateCmdFlags.templatePath, "from", "f", "", "Custom path for the cluster template")
+	clusterCreateCmd.Flags().StringVarP(&clusterCreateCmdFlags.templatePath, "from", "f",
+		"https://github.com/talos-systems/cluster-api-templates/blob/main/aws/standard/standard.yaml", "Custom path for the cluster template")
 	clusterCreateCmd.Flags().Int64Var(&deployOptions.ControlPlaneNodes, "control-plane-nodes", deployOptions.ControlPlaneNodes, "Number of control plane nodes to deploy")
 	clusterCreateCmd.Flags().Int64Var(&deployOptions.WorkerNodes, "worker-nodes", deployOptions.WorkerNodes, "Number of worker nodes to deploy")
 	clusterCreateCmd.Flags().StringVarP(&deployOptions.Provider, "provider", "p", deployOptions.Provider, "Infrastructure provider to use for the deployment")
