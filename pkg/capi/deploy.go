@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"strconv"
 	"time"
 
@@ -37,6 +36,7 @@ type DeployOptions struct {
 	ClusterNamespace  string
 	TalosVersion      string
 	KubernetesVersion string
+	TemplateFile      string
 	Template          []byte
 	ControlPlaneNodes int64
 	WorkerNodes       int64
@@ -110,17 +110,7 @@ func WithKubernetesVersion(version string) DeployOption {
 // WithTemplateFile load cluster template from the file.
 func WithTemplateFile(path string) DeployOption {
 	return func(o *DeployOptions) error {
-		f, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-
-		defer f.Close() //nolint:errcheck
-
-		o.Template, err = ioutil.ReadAll(f)
-		if err != nil {
-			return err
-		}
+		o.TemplateFile = path
 
 		return nil
 	}
@@ -232,6 +222,10 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 		}
 
 		defer file.Close() //nolint:errcheck
+	} else if options.TemplateFile != "" {
+		templateOptions.URLSource = &client.URLSourceOptions{
+			URL: options.TemplateFile,
+		}
 	}
 
 	vars, err := provider.ClusterVars(options.providerOptions)

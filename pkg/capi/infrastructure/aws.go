@@ -73,6 +73,7 @@ type AWSDeployOptions struct {
 	VPCID                     string
 	Subnet                    string
 	CloudProviderVersion      string
+	CalicoVersion             string
 	ControlPlaneVolSize       int64
 	NodeVolSize               int64
 }
@@ -87,6 +88,7 @@ func NewAWSDeployOptions() *AWSDeployOptions {
 		NodeMachineType:         "t3.large",
 		NodeIAMProfile:          "CAPI_AWS_Worker",
 		CloudProviderVersion:    "v1.20.0-alpha.0",
+		CalicoVersion:           "3.18",
 	}
 }
 
@@ -182,6 +184,7 @@ func (s *AWSProvider) ClusterVars(opts interface{}) (Variables, error) {
 		"AWS_NODE_IAM_PROFILE":              deployOptions.NodeIAMProfile,
 		"AWS_NODE_AMI_ID":                   deployOptions.NodeAMIID,
 		"AWS_CLOUD_PROVIDER_VERSION":        deployOptions.CloudProviderVersion,
+		"CALICO_VERSION":                    deployOptions.CalicoVersion,
 	}
 
 	return vars, nil
