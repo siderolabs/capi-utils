@@ -88,7 +88,7 @@ func NewAWSDeployOptions() *AWSDeployOptions {
 		NodeMachineType:         "t3.large",
 		NodeIAMProfile:          "CAPI_AWS_Worker",
 		CloudProviderVersion:    "v1.20.0-alpha.0",
-		CalicoVersion:           "3.18",
+		CalicoVersion:           "v3.18",
 	}
 }
 
