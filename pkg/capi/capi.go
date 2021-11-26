@@ -12,6 +12,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,6 +57,7 @@ type Options struct {
 	InfrastructureProviders []infrastructure.Provider
 	BootstrapProviders      []string
 	ControlPlaneProviders   []string
+	WaitProviderTimeout     time.Duration
 }
 
 // NewManager creates new Manager object.
@@ -242,6 +244,11 @@ func (clusterAPI *Manager) InstallCore(ctx context.Context, kubeconfig client.Ku
 			LogUsageInstructions:    false,
 		}
 
+		if clusterAPI.options.WaitProviderTimeout != 0 {
+			coreOpts.WaitProviders = true
+			coreOpts.WaitProviderTimeout = time.Minute * 5
+		}
+
 		if _, err = clusterAPI.client.Init(coreOpts); err != nil {
 			return err
 		}
@@ -286,6 +293,11 @@ func (clusterAPI *Manager) InstallProvider(ctx context.Context, kubeconfig clien
 			InfrastructureProviders: []string{providerString},
 			TargetNamespace:         provider.Namespace(),
 			LogUsageInstructions:    false,
+		}
+
+		if clusterAPI.options.WaitProviderTimeout != 0 {
+			infraOpts.WaitProviders = true
+			infraOpts.WaitProviderTimeout = time.Minute * 5
 		}
 
 		if _, err = clusterAPI.client.Init(infraOpts); err != nil {
