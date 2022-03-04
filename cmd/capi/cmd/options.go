@@ -17,7 +17,7 @@ type Options struct {
 // DefaultOptions returns default settings.
 func DefaultOptions() Options {
 	return Options{
-		CoreProvider:            "cluster-api:v0.4.3",
+		CoreProvider:            "cluster-api:v1.1.0",
 		BootstrapProviders:      []string{"talos"},
 		InfrastructureProviders: []string{"aws"},
 		ControlPlaneProviders:   []string{"talos"},

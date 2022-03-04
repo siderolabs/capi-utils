@@ -1,6 +1,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED, PLEASE DO NOT EDIT.
 #
-# Generated on 2021-08-27T13:59:12Z by kres c09f1a6-dirty.
+# Generated on 2022-03-04T14:15:24Z by kres latest.
 
 # options for analysis running
 run:
@@ -89,7 +89,7 @@ linters-settings:
     require-explanation: false
     require-specific: true
   rowserrcheck: {}
-  testpackage:
+  testpackage: {}
   unparam:
     check-exported: false
   unused:
