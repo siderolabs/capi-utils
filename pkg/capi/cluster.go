@@ -62,7 +62,6 @@ func (cluster *Cluster) Sync(ctx context.Context) error {
 	var (
 		controlPlane unstructured.Unstructured
 		machines     unstructured.UnstructuredList
-		talosConfig  unstructured.Unstructured
 
 		controlPlaneNodes = []string{}
 		workerNodes       = []string{}
@@ -113,26 +112,16 @@ func (cluster *Cluster) Sync(ctx context.Context) error {
 		return fmt.Errorf("not enough machines found")
 	}
 
-	configRef, err := getRef(machines.Items[0].Object, "spec", "bootstrap", "configRef")
-	if err != nil {
+	var talosConfig v1.Secret
+
+	if err = cluster.manager.runtimeClient.Get(ctx, types.NamespacedName{
+		Namespace: cluster.Namespace(),
+		Name:      cluster.Name(),
+	}, &talosConfig); err != nil {
 		return err
 	}
 
-	talosConfig.SetGroupVersionKind(configRef.gvk)
-
-	if err = cluster.manager.runtimeClient.Get(ctx, configRef.NamespacedName, &talosConfig); err != nil {
-		return err
-	}
-
-	var talosConfigString string
-
-	if talosConfigString, found, err = unstructured.NestedString(talosConfig.Object, "status", "talosConfig"); err != nil {
-		return err
-	} else if !found {
-		return fieldNotFound("status", "talosConfig")
-	}
-
-	cluster.clientConfig, err = clientconfig.FromString(talosConfigString)
+	cluster.clientConfig, err = clientconfig.FromBytes(talosConfig.Data["talosconfig"])
 
 	if err != nil {
 		return err
