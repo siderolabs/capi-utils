@@ -116,7 +116,7 @@ func (cluster *Cluster) Sync(ctx context.Context) error {
 
 	if err = cluster.manager.runtimeClient.Get(ctx, types.NamespacedName{
 		Namespace: cluster.Namespace(),
-		Name:      cluster.Name(),
+		Name:      cluster.Name() + "-talosconfig",
 	}, &talosConfig); err != nil {
 		return err
 	}
