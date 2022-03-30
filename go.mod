@@ -7,18 +7,21 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/talos-systems/go-debug v0.2.1
 	github.com/talos-systems/go-retry v0.3.1
-	github.com/talos-systems/talos/pkg/machinery v0.15.0-alpha.2
+	github.com/talos-systems/talos/pkg/machinery v1.0.0
 	google.golang.org/grpc v1.44.0
 	k8s.io/api v0.23.4
 	k8s.io/apimachinery v0.23.4
 	k8s.io/client-go v0.23.4
-	sigs.k8s.io/cluster-api v1.1.2
+	sigs.k8s.io/cluster-api v1.1.3
 	sigs.k8s.io/controller-runtime v0.11.1
 )
 
 require (
 	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver/v3 v3.1.1 // indirect
+	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210826220005-b48c857c3a0e // indirect
@@ -26,7 +29,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/containerd/go-cni v1.1.1 // indirect
+	github.com/containerd/go-cni v1.1.3 // indirect
 	github.com/containernetworking/cni v1.0.1 // indirect
 	github.com/cosi-project/runtime v0.0.0-20211216175730-264f8fcd1a4f // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -53,6 +56,7 @@ require (
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -60,7 +64,9 @@ require (
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/onsi/gomega v1.17.0 // indirect
@@ -71,6 +77,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.28.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -78,19 +85,19 @@ require (
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/talos-systems/crypto v0.3.5-0.20211220133734-6fa2d93d0382 // indirect
-	github.com/talos-systems/net v0.3.2-0.20220207192449-409926aec1c3 // indirect
+	github.com/talos-systems/crypto v0.3.5 // indirect
+	github.com/talos-systems/net v0.3.2 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
+	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220204002441-d6cc3cc0770e // indirect
+	google.golang.org/genproto v0.0.0-20220228155957-1da8797a5878 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

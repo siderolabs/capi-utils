@@ -2,16 +2,16 @@
 
 # THIS FILE WAS AUTOMATICALLY GENERATED, PLEASE DO NOT EDIT.
 #
-# Generated on 2022-03-04T14:15:57Z by kres latest.
+# Generated on 2022-03-30T11:02:44Z by kres latest.
 
 ARG TOOLCHAIN
 
 # cleaned up specs and compiled versions
 FROM scratch AS generate
 
-FROM ghcr.io/talos-systems/ca-certificates:v0.3.0-12-g90722c3 AS image-ca-certificates
+FROM ghcr.io/siderolabs/ca-certificates:v1.0.0 AS image-ca-certificates
 
-FROM ghcr.io/talos-systems/fhs:v0.3.0-12-g90722c3 AS image-fhs
+FROM ghcr.io/siderolabs/fhs:v1.0.0 AS image-fhs
 
 # runs markdownlint
 FROM node:14.8.0-alpine AS lint-markdown
@@ -133,6 +133,6 @@ ARG TARGETARCH
 COPY --from=capi capi-linux-${TARGETARCH} /capi
 COPY --from=image-fhs / /
 COPY --from=image-ca-certificates / /
-LABEL org.opencontainers.image.source https://github.com/talos-systems/capi-utils
+LABEL org.opencontainers.image.source https://github.com/siderolabs/capi-utils
 ENTRYPOINT ["/capi"]
 
