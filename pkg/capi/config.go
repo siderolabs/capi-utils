@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -71,8 +70,8 @@ func (c *Config) Init(path string) error {
 				return fmt.Errorf("failed to download the clusterctl config file from %s got %d", url, resp.StatusCode)
 			}
 
-			defer io.Copy(ioutil.Discard, resp.Body) //nolint:errcheck
-			defer resp.Body.Close()                  //nolint:errcheck
+			defer io.Copy(io.Discard, resp.Body) //nolint:errcheck
+			defer resp.Body.Close()              //nolint:errcheck
 
 			if err = c.config.ReadConfig(resp.Body); err != nil {
 				return err

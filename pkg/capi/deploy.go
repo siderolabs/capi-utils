@@ -7,8 +7,8 @@ package capi
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
 
-	"github.com/talos-systems/capi-utils/pkg/capi/infrastructure"
+	"github.com/siderolabs/capi-utils/pkg/capi/infrastructure"
 )
 
 // DeployOption defines a single CAPI cluster creation option.
@@ -48,7 +48,7 @@ func DefaultDeployOptions() *DeployOptions {
 		ControlPlaneNodes: 1,
 		WorkerNodes:       1,
 		ClusterNamespace:  "default",
-		TalosVersion:      "v0.13",
+		TalosVersion:      "v1.2",
 		KubernetesVersion: constants.DefaultKubernetesVersion,
 	}
 }
@@ -153,6 +153,7 @@ func WithClusterNamespace(val string) DeployOption {
 }
 
 // DeployCluster creates a new cluster.
+//
 //nolint:gocognit
 func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string, setters ...DeployOption) (*Cluster, error) {
 	if len(clusterAPI.providers) == 0 {
@@ -208,7 +209,7 @@ func (clusterAPI *Manager) DeployCluster(ctx context.Context, clusterName string
 	}
 
 	if options.Template != nil {
-		file, err := ioutil.TempFile("", "clusterTemplate")
+		file, err := os.CreateTemp("", "clusterTemplate")
 		if err != nil {
 			log.Fatal(err)
 		}

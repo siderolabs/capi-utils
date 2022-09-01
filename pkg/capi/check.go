@@ -15,6 +15,7 @@ import (
 )
 
 // CheckClusterReady verifies that cluster ready from the CAPI point of view.
+//
 //nolint:cyclop,gocyclo,gocognit
 func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, cluster *Cluster) error {
 	var (

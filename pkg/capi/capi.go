@@ -29,8 +29,8 @@ import (
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/talos-systems/capi-utils/pkg/capi/infrastructure"
-	"github.com/talos-systems/capi-utils/pkg/constants"
+	"github.com/siderolabs/capi-utils/pkg/capi/infrastructure"
+	"github.com/siderolabs/capi-utils/pkg/constants"
 )
 
 // Manager installs and controls cluster API installation.
@@ -67,7 +67,7 @@ func NewManager(ctx context.Context, options Options) (*Manager, error) {
 		cfg:     newConfig(),
 	}
 
-	err := clusterAPI.cfg.Init(options.ClusterctlConfigPath)
+	err := clusterAPI.cfg.Init(options.ClusterctlConfigPath) //nolint:contextcheck
 	if err != nil {
 		return nil, err
 	}

@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/talos-systems/capi-utils/pkg/capi"
-	"github.com/talos-systems/capi-utils/pkg/capi/infrastructure"
+	"github.com/siderolabs/capi-utils/pkg/capi"
+	"github.com/siderolabs/capi-utils/pkg/capi/infrastructure"
 )
 
 var capiCoreCmd = &cobra.Command{

@@ -8,7 +8,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/talos-systems/capi-utils/pkg/capi"
+	"github.com/siderolabs/capi-utils/pkg/capi"
 )
 
 var setupOptions = map[string]interface{}{}

@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
 
-	"github.com/talos-systems/capi-utils/pkg/constants"
+	"github.com/siderolabs/capi-utils/pkg/constants"
 )
 
 // NewAWSProvider creates new AWS infrastructure provider.
@@ -83,7 +83,7 @@ func NewAWSDeployOptions() *AWSDeployOptions {
 		NodeMachineType:         "t3.large",
 		NodeIAMProfile:          "CAPI_AWS_Worker",
 		CloudProviderVersion:    "v1.20.0-alpha.0",
-		CalicoVersion:           "v3.18",
+		CalicoVersion:           "v3.24.1",
 	}
 }
 

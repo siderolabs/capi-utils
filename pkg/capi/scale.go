@@ -41,6 +41,7 @@ func MachineDeploymentName(name string) ScaleOption {
 }
 
 // Scale cluster nodes.
+//
 //nolint:gocognit,gocyclo,cyclop
 func (cluster *Cluster) Scale(ctx context.Context, replicas int, nodes NodeGroup, setters ...ScaleOption) error {
 	var object *unstructured.Unstructured

@@ -57,6 +57,7 @@ func (clusterAPI *Manager) NewCluster(ctx context.Context, name, namespace strin
 }
 
 // Sync updates nodes pool and recreates talos client.
+//
 //nolint:gocyclo,cyclop
 func (cluster *Cluster) Sync(ctx context.Context) error {
 	var (
