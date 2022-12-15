@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/talos-systems/go-retry/retry"
+	"github.com/siderolabs/go-retry/retry"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

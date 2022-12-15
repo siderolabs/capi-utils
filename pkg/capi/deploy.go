@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/talos-systems/go-retry/retry"
-	"github.com/talos-systems/talos/pkg/machinery/constants"
+	"github.com/siderolabs/go-retry/retry"
+	"github.com/siderolabs/talos/pkg/machinery/constants"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -48,7 +48,7 @@ func DefaultDeployOptions() *DeployOptions {
 		ControlPlaneNodes: 1,
 		WorkerNodes:       1,
 		ClusterNamespace:  "default",
-		TalosVersion:      "v1.2",
+		TalosVersion:      "v1.3",
 		KubernetesVersion: constants.DefaultKubernetesVersion,
 	}
 }

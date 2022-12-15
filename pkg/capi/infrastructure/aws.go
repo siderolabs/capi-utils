@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/talos-systems/go-retry/retry"
+	"github.com/siderolabs/go-retry/retry"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,7 +82,7 @@ func NewAWSDeployOptions() *AWSDeployOptions {
 		ControlPlaneIAMProfile:  "CAPI_AWS_ControlPlane",
 		NodeMachineType:         "t3.large",
 		NodeIAMProfile:          "CAPI_AWS_Worker",
-		CloudProviderVersion:    "v1.20.0-alpha.0",
+		CloudProviderVersion:    "v1.22.3",
 		CalicoVersion:           "v3.24.1",
 	}
 }

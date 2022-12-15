@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/talos-systems/go-retry/retry"
+	"github.com/siderolabs/go-retry/retry"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 )
