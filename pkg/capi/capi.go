@@ -145,7 +145,7 @@ func NewManager(ctx context.Context, options Options) (*Manager, error) {
 }
 
 // GetKubeconfig returns kubeconfig in clusterctl expected format.
-func (clusterAPI *Manager) GetKubeconfig(ctx context.Context) (client.Kubeconfig, error) {
+func (clusterAPI *Manager) GetKubeconfig(context.Context) (client.Kubeconfig, error) {
 	if clusterAPI.kubeconfig.Path != "" {
 		return clusterAPI.kubeconfig, nil
 	}
@@ -175,7 +175,7 @@ func (clusterAPI *Manager) GetManagerClient() client.Client {
 }
 
 // GetClient returns k8s client stuffed with CAPI CRDs.
-func (clusterAPI *Manager) GetClient(ctx context.Context) (client runtimeclient.Client, err error) {
+func (clusterAPI *Manager) GetClient(context.Context) (client runtimeclient.Client, err error) {
 	if clusterAPI.runtimeClient != nil {
 		return clusterAPI.runtimeClient, nil
 	}

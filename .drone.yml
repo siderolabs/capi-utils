@@ -1,7 +1,7 @@
 ---
 # THIS FILE WAS AUTOMATICALLY GENERATED, PLEASE DO NOT EDIT.
 #
-# Generated on 2022-09-01T17:45:00Z by kres ec2cd64.
+# Generated on 2023-04-21T10:20:31Z by kres latest.
 
 kind: pipeline
 type: kubernetes
@@ -270,7 +270,7 @@ steps:
 
 services:
 - name: docker
-  image: docker:20.10-dind
+  image: docker:23.0-dind
   entrypoint:
   - dockerd
   commands:
@@ -303,6 +303,16 @@ volumes:
   temp:
     medium: memory
 
+trigger:
+  branch:
+    exclude:
+    - renovate/*
+    - dependabot/*
+  event:
+    exclude:
+    - promote
+    - cron
+
 ---
 kind: pipeline
 type: kubernetes
@@ -330,6 +340,10 @@ steps:
     - failure
 
 trigger:
+  branch:
+    exclude:
+    - renovate/*
+    - dependabot/*
   status:
   - success
   - failure
