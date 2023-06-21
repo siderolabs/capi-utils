@@ -1,0 +1,4 @@
+mirrors:
+  - repo: https://github.com/siderolabs/ui
+    rootDir: ""
+    branches: refs\/heads\/testing-ci-bot
