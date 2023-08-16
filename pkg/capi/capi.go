@@ -309,18 +309,27 @@ func (clusterAPI *Manager) InstallProvider(ctx context.Context, kubeconfig clien
 }
 
 // FetchState fetches infra providers and installed CAPI version if any.
+//
+//nolint:gocognit
 func (clusterAPI *Manager) FetchState(ctx context.Context) error {
 	resources, err := clusterAPI.clientset.ServerPreferredResources()
 	if err != nil {
 		return err
 	}
 
-	gv := schema.GroupVersion{}
+	var gvProvider, gvCluster schema.GroupVersion
 
 	for _, list := range resources {
 		for _, resource := range list.APIResources {
-			if resource.Kind == "Provider" {
-				gv, err = schema.ParseGroupVersion(list.GroupVersion)
+			switch resource.Kind {
+			case "Provider":
+				gvProvider, err = schema.ParseGroupVersion(list.GroupVersion)
+
+				if err != nil {
+					return err
+				}
+			case "Cluster":
+				gvCluster, err = schema.ParseGroupVersion(list.GroupVersion)
 
 				if err != nil {
 					return err
@@ -330,15 +339,15 @@ func (clusterAPI *Manager) FetchState(ctx context.Context) error {
 	}
 
 	// Assume CAPI not installed
-	if gv.Version == "" {
+	if gvProvider.Version == "" {
 		return nil
 	}
 
 	providers := &unstructured.UnstructuredList{}
 	providers.SetGroupVersionKind(schema.GroupVersionKind{
 		Kind:    "Provider",
-		Group:   gv.Group,
-		Version: gv.Version,
+		Group:   gvProvider.Group,
+		Version: gvProvider.Version,
 	})
 
 	if err = clusterAPI.runtimeClient.List(ctx, providers); err != nil {
@@ -385,7 +394,7 @@ func (clusterAPI *Manager) FetchState(ctx context.Context) error {
 	}
 
 	clusterAPI.providers = infrastructureProviders
-	clusterAPI.version = gv.Version
+	clusterAPI.version = gvCluster.Version
 
 	return nil
 }
