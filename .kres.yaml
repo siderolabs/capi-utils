@@ -21,3 +21,7 @@ spec:
     windows-amd64.exe:
       GOOS: windows
       GOARCH: amd64
+---
+kind: service.CodeCov
+spec:
+  enabled: false

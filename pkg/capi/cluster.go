@@ -139,7 +139,7 @@ func (cluster *Cluster) Sync(ctx context.Context) error {
 		Namespace:           cluster.namespace,
 	}
 
-	raw, err := cluster.manager.client.GetKubeconfig(options)
+	raw, err := cluster.manager.client.GetKubeconfig(ctx, options)
 	if err != nil {
 		return err
 	}
