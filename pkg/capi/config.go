@@ -43,7 +43,7 @@ func newConfig() *Config {
 }
 
 // Init initializes the config.
-func (c *Config) Init(path string) error {
+func (c *Config) Init(ctx context.Context, path string) error {
 	if path != "" {
 		url, err := url.Parse(path)
 		if err != nil {
@@ -56,7 +56,7 @@ func (c *Config) Init(path string) error {
 				Timeout: 30 * time.Second,
 			}
 
-			request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url.String(), nil)
+			request, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
 			if err != nil {
 				return err
 			}

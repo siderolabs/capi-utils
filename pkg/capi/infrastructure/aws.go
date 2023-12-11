@@ -187,7 +187,7 @@ func (s *AWSProvider) ClusterVars(opts interface{}) (Variables, error) {
 
 // GetClusterTemplate implements Provider interface.
 func (s *AWSProvider) GetClusterTemplate(client client.Client, opts client.GetClusterTemplateOptions) (client.Template, error) {
-	return client.GetClusterTemplate(opts)
+	return client.GetClusterTemplate(context.TODO(), opts)
 }
 
 // WaitReady implements Provider interface.

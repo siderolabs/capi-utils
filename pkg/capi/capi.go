@@ -67,12 +67,12 @@ func NewManager(ctx context.Context, options Options) (*Manager, error) {
 		cfg:     newConfig(),
 	}
 
-	err := clusterAPI.cfg.Init(options.ClusterctlConfigPath) //nolint:contextcheck
+	err := clusterAPI.cfg.Init(ctx, options.ClusterctlConfigPath)
 	if err != nil {
 		return nil, err
 	}
 
-	configClient, err := config.New(options.ClusterctlConfigPath, config.InjectReader(clusterAPI.cfg))
+	configClient, err := config.New(ctx, options.ClusterctlConfigPath, config.InjectReader(clusterAPI.cfg))
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func NewManager(ctx context.Context, options Options) (*Manager, error) {
 		}))
 	}
 
-	clusterAPI.client, err = client.New(options.ClusterctlConfigPath, opts...)
+	clusterAPI.client, err = client.New(ctx, options.ClusterctlConfigPath, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ func (clusterAPI *Manager) InstallCore(ctx context.Context, kubeconfig client.Ku
 			coreOpts.WaitProviderTimeout = time.Minute * 5
 		}
 
-		if _, err = clusterAPI.client.Init(coreOpts); err != nil {
+		if _, err = clusterAPI.client.Init(ctx, coreOpts); err != nil {
 			return err
 		}
 	}
@@ -300,7 +300,7 @@ func (clusterAPI *Manager) InstallProvider(ctx context.Context, kubeconfig clien
 			infraOpts.WaitProviderTimeout = time.Minute * 5
 		}
 
-		if _, err = clusterAPI.client.Init(infraOpts); err != nil {
+		if _, err = clusterAPI.client.Init(ctx, infraOpts); err != nil {
 			return err
 		}
 	}

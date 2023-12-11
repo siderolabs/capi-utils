@@ -1,6 +1,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED, PLEASE DO NOT EDIT.
 #
-# Generated on 2023-08-16T14:48:45Z by kres latest.
+# Generated on 2023-12-11T14:28:13Z by kres latest.
 
 # common variables
 
@@ -14,15 +14,15 @@ WITH_RACE ?= false
 REGISTRY ?= ghcr.io
 USERNAME ?= siderolabs
 REGISTRY_AND_USERNAME ?= $(REGISTRY)/$(USERNAME)
-PROTOBUF_GO_VERSION ?= 1.28.1
+PROTOBUF_GO_VERSION ?= 1.31.0
 GRPC_GO_VERSION ?= 1.3.0
-GRPC_GATEWAY_VERSION ?= 2.16.2
-VTPROTOBUF_VERSION ?= 0.4.0
+GRPC_GATEWAY_VERSION ?= 2.18.1
+VTPROTOBUF_VERSION ?= 0.5.0
 DEEPCOPY_VERSION ?= v0.5.5
-GOLANGCILINT_VERSION ?= v1.54.0
+GOLANGCILINT_VERSION ?= v1.55.2
 GOFUMPT_VERSION ?= v0.5.0
-GO_VERSION ?= 1.21
-GOIMPORTS_VERSION ?= v0.12.0
+GO_VERSION ?= 1.21.5
+GOIMPORTS_VERSION ?= v0.16.0
 GO_BUILDFLAGS ?=
 GO_LDFLAGS ?=
 CGO_ENABLED ?= 0
@@ -219,7 +219,7 @@ image-capi:  ## Builds image for capi.
 .PHONY: rekres
 rekres:
 	@docker pull $(KRES_IMAGE)
-	@docker run --rm -v $(PWD):/src -w /src -e GITHUB_TOKEN $(KRES_IMAGE)
+	@docker run --rm --net=host --user $(shell id -u):$(shell id -g) -v $(PWD):/src -w /src -e GITHUB_TOKEN $(KRES_IMAGE)
 
 .PHONY: help
 help:  ## This help menu.
