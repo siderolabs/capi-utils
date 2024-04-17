@@ -24,7 +24,7 @@ var capiCoreCmd = &cobra.Command{
 	Example: `
 	capi bootstrap core
 	`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(*cobra.Command, []string) error {
 		ctx := context.Background()
 
 		var err error

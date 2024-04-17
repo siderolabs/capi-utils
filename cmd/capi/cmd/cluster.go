@@ -19,7 +19,7 @@ var clusterCmdFlags struct {
 
 var clusterCmd = &cobra.Command{
 	Use: "cluster",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(*cobra.Command, []string) error {
 		ctx := context.Background()
 
 		var err error

@@ -30,7 +30,7 @@ var capiInfraCmd = &cobra.Command{
 	## Specifying namespaces and version for infra provider
 	capi bootstrap infra --providers aws:v0.6.8 --target-ns my-ns --watching-ns my-ns-to-watch
 	`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(*cobra.Command, []string) error {
 		ctx := context.Background()
 
 		providers := make([]infrastructure.Provider, len(options.InfrastructureProviders))

@@ -26,7 +26,7 @@ var clusterCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Deploy a cluster using CAPI.",
 	Long:  ``,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(*cobra.Command, []string) error {
 		ctx := context.Background()
 
 		opts := []capi.DeployOption{

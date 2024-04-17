@@ -123,7 +123,6 @@ func (cluster *Cluster) Sync(ctx context.Context) error {
 	}
 
 	cluster.clientConfig, err = clientconfig.FromBytes(talosConfig.Data["talosconfig"])
-
 	if err != nil {
 		return err
 	}

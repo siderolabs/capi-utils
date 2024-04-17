@@ -27,7 +27,7 @@ var clusterScaleCmd = &cobra.Command{
 	Use:   "scale",
 	Short: "Scale a CAPI cluster.",
 	Long:  ``,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(*cobra.Command, []string) error {
 		ctx := context.Background()
 
 		group, ok := groups[clusterScaleCmdFlags.group]

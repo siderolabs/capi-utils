@@ -324,13 +324,11 @@ func (clusterAPI *Manager) FetchState(ctx context.Context) error {
 			switch resource.Kind {
 			case "Provider":
 				gvProvider, err = schema.ParseGroupVersion(list.GroupVersion)
-
 				if err != nil {
 					return err
 				}
 			case "Cluster":
 				gvCluster, err = schema.ParseGroupVersion(list.GroupVersion)
-
 				if err != nil {
 					return err
 				}

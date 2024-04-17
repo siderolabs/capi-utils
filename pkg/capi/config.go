@@ -91,6 +91,7 @@ func (c *Config) Init(ctx context.Context, path string) error {
 
 		// Configure viper for reading .cluster-api/clusterctl{.extension} in home directory
 		c.config.SetConfigName(config.ConfigName)
+
 		for _, p := range c.configPaths {
 			c.config.AddConfigPath(p)
 		}
