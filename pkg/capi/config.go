@@ -50,8 +50,8 @@ func (c *Config) Init(ctx context.Context, path string) error {
 			return fmt.Errorf("failed to url parse the config path %w", err)
 		}
 
-		switch {
-		case url.Scheme == "https" || url.Scheme == "http":
+		switch url.Scheme {
+		case "https", "http":
 			client := &http.Client{
 				Timeout: 30 * time.Second,
 			}
