@@ -201,7 +201,6 @@ func (s *AWSProvider) WaitReady(ctx context.Context, clientset *kubernetes.Clien
 			err        error
 			deployment *v1.Deployment
 		)
-
 		if deployment, err = clientset.AppsV1().Deployments(s.Namespace()).Get(ctx, "capa-controller-manager", metav1.GetOptions{}); err != nil {
 			return retry.ExpectedError(err)
 		}

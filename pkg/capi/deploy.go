@@ -48,7 +48,7 @@ func DefaultDeployOptions() *DeployOptions {
 		ControlPlaneNodes: 1,
 		WorkerNodes:       1,
 		ClusterNamespace:  "default",
-		TalosVersion:      "v1.10",
+		TalosVersion:      "v1.11",
 		KubernetesVersion: constants.DefaultKubernetesVersion,
 	}
 }

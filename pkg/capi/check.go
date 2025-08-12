@@ -25,7 +25,6 @@ func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, cluster *Clust
 		conditions  []interface{}
 		err         error
 	)
-
 	if err = cluster.sync(ctx); err != nil {
 		return err
 	}
