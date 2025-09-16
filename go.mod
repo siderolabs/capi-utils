@@ -2,9 +2,6 @@ module github.com/siderolabs/capi-utils
 
 go 1.24.0
 
-// compatibility with kube-apiserver v0.32.3, should be dropped once kube-apiserver dependency is updated
-replace github.com/google/cel-go => github.com/google/cel-go v0.22.0
-
 require (
 	github.com/siderolabs/go-debug v0.5.0
 	github.com/siderolabs/go-retry v0.3.3
