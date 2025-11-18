@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// Package capi manages CAPI installation, provides default client for CAPI CRDs.
 package capi
 
 import (
@@ -115,7 +114,7 @@ func (c *Config) Set(key, value string) {
 }
 
 // UnmarshalKey implements config.Reader.
-func (c *Config) UnmarshalKey(key string, rawval interface{}) error {
+func (c *Config) UnmarshalKey(key string, rawval any) error {
 	return c.config.UnmarshalKey(key, rawval)
 }
 

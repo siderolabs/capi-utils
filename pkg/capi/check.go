@@ -22,7 +22,7 @@ func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, cluster *Clust
 		initialized bool
 		ready       bool
 		found       bool
-		conditions  []interface{}
+		conditions  []any
 		err         error
 	)
 	if err = cluster.sync(ctx); err != nil {
@@ -43,7 +43,7 @@ func (clusterAPI *Manager) CheckClusterReady(ctx context.Context, cluster *Clust
 			status string
 		)
 
-		c, ok := cond.(map[string]interface{})
+		c, ok := cond.(map[string]any)
 		if !ok {
 			return fmt.Errorf("failed to convert condition to map[string]interface{}")
 		}

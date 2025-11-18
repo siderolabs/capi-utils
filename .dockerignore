@@ -1,6 +1,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED, PLEASE DO NOT EDIT.
 #
-# Generated on 2023-04-21T10:20:31Z by kres latest.
+# Generated on 2025-11-18T10:24:05Z by kres e1d6dac.
 
 *
 !cmd
@@ -10,3 +10,4 @@
 !.golangci.yml
 !README.md
 !.markdownlint.json
+!hack/govulncheck.sh

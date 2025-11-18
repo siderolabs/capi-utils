@@ -25,9 +25,9 @@ type Provider interface {
 	Namespace() string
 	Version() string
 	WatchingNamespace() string
-	Configure(interface{}) error
+	Configure(any) error
 	ProviderVars() (Variables, error)
-	ClusterVars(interface{}) (Variables, error)
+	ClusterVars(any) (Variables, error)
 	IsInstalled(ctx context.Context, clientset *kubernetes.Clientset) (bool, error)
 	GetClusterTemplate(client.Client, client.GetClusterTemplateOptions) (client.Template, error)
 	WaitReady(context.Context, *kubernetes.Clientset) error

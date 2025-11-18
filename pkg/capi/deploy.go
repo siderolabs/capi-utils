@@ -28,7 +28,7 @@ type DeployOption func(opts *DeployOptions) error
 
 // DeployOptions cluster deployment options.
 type DeployOptions struct {
-	providerOptions interface{}
+	providerOptions any
 
 	Provider          string
 	ProviderVersion   string
@@ -135,7 +135,7 @@ func WithDeployOptions(val *DeployOptions) DeployOption {
 }
 
 // WithProviderOptions sets provider specific deploy options.
-func WithProviderOptions(val interface{}) DeployOption {
+func WithProviderOptions(val any) DeployOption {
 	return func(o *DeployOptions) error {
 		o.providerOptions = val
 

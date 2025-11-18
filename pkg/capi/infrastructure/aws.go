@@ -88,7 +88,7 @@ func NewAWSDeployOptions() *AWSDeployOptions {
 }
 
 // Configure implements Provider interface.
-func (s *AWSProvider) Configure(providerOptions interface{}) error {
+func (s *AWSProvider) Configure(providerOptions any) error {
 	opts, ok := providerOptions.(*AWSSetupOptions)
 	if !ok {
 		return fmt.Errorf("expected AWSSetupOptions as the first argument")
@@ -150,7 +150,7 @@ func (s *AWSProvider) IsInstalled(ctx context.Context, clientset *kubernetes.Cli
 }
 
 // ClusterVars returns config overrides for template generation.
-func (s *AWSProvider) ClusterVars(opts interface{}) (Variables, error) {
+func (s *AWSProvider) ClusterVars(opts any) (Variables, error) {
 	var (
 		deployOptions = NewAWSDeployOptions()
 		ok            bool

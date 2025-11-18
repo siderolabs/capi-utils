@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// Package cmd contains all bootstrap CLI commands.
 package cmd
 
 import (
@@ -11,7 +10,7 @@ import (
 	"github.com/siderolabs/capi-utils/pkg/capi"
 )
 
-var setupOptions = map[string]interface{}{}
+var setupOptions = map[string]any{}
 
 var awsOptions struct {
 	b64EncodedCredentials string

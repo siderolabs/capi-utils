@@ -415,7 +415,7 @@ type ref struct {
 	gvk schema.GroupVersionKind
 }
 
-func getRef(in map[string]interface{}, keys ...string) (*ref, error) {
+func getRef(in map[string]any, keys ...string) (*ref, error) {
 	res := &ref{}
 
 	refInterface, found, err := unstructured.NestedMap(in, keys...)
