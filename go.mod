@@ -1,12 +1,12 @@
 module github.com/siderolabs/capi-utils
 
-go 1.24.0
+go 1.25.2
 
 // compatibility with kube-apiserver v0.32.3, should be dropped once kube-apiserver dependency is updated
 replace github.com/google/cel-go => github.com/google/cel-go v0.22.0
 
 require (
-	github.com/siderolabs/go-debug v0.5.0
+	github.com/siderolabs/go-debug v0.6.1
 	github.com/siderolabs/go-retry v0.3.3
 	github.com/siderolabs/talos/pkg/machinery v1.11.0-beta.2
 	github.com/spf13/cobra v1.9.1
@@ -118,14 +118,14 @@ require (
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.38.0 // indirect
+	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/net v0.45.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sync v0.15.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/term v0.32.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/term v0.35.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250715232539-7130f93afb79 // indirect
