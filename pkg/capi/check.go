@@ -11,7 +11,7 @@ import (
 	"github.com/siderolabs/go-retry/retry"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 )
 
 // CheckClusterReady verifies that cluster ready from the CAPI point of view.
