@@ -3,20 +3,20 @@ module github.com/siderolabs/capi-utils
 go 1.25.3
 
 // compatibility with kube-apiserver v0.32.3, should be dropped once kube-apiserver dependency is updated
-replace github.com/google/cel-go => github.com/google/cel-go v0.22.0
+replace github.com/google/cel-go => github.com/google/cel-go v0.26.1
 
 require (
 	github.com/siderolabs/go-debug v0.6.1
 	github.com/siderolabs/go-retry v0.3.3
-	github.com/siderolabs/talos/pkg/machinery v1.12.0-beta.0
-	github.com/spf13/cobra v1.10.1
+	github.com/siderolabs/talos/pkg/machinery v1.12.0-beta.1
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
-	google.golang.org/grpc v1.76.0
-	k8s.io/api v0.32.3
-	k8s.io/apimachinery v0.32.3
-	k8s.io/client-go v0.32.3
-	sigs.k8s.io/cluster-api v1.10.4
-	sigs.k8s.io/controller-runtime v0.20.4
+	google.golang.org/grpc v1.77.0
+	k8s.io/api v0.34.2
+	k8s.io/apimachinery v0.34.2
+	k8s.io/client-go v0.34.2
+	sigs.k8s.io/cluster-api v1.11.3
+	sigs.k8s.io/controller-runtime v0.22.4
 )
 
 require (
